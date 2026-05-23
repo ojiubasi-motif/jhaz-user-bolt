@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #faf8f5;
+    color: #2e231c;
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background-color: #edab72;
+    color: #2e231c;
+  }
+}
+
+@layer components {
+  .section-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .heading-xl {
+    @apply font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.1] tracking-tight;
+  }
+
+  .heading-lg {
+    @apply font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.15] tracking-tight;
+  }
+
+  .heading-md {
+    @apply font-display text-2xl sm:text-3xl font-semibold leading-tight;
+  }
+
+  .heading-sm {
+    @apply font-display text-xl sm:text-2xl font-semibold leading-tight;
+  }
+
+  .body-lg {
+    @apply text-lg sm:text-xl leading-relaxed text-earth-700;
+  }
+
+  .body-md {
+    @apply text-base leading-relaxed text-earth-600;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-8 py-4 bg-night-950 text-earth-50 font-body font-semibold text-sm tracking-wider uppercase transition-all duration-300 hover:bg-terra-700 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-8 py-4 border-2 border-night-950 text-night-950 font-body font-semibold text-sm tracking-wider uppercase transition-all duration-300 hover:bg-night-950 hover:text-earth-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-6 py-3 text-night-950 font-body font-medium text-sm tracking-wide underline underline-offset-4 decoration-terra-400 transition-all duration-300 hover:decoration-terra-600;
+  }
+
+  .card-hover {
+    @apply transition-all duration-500 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .img-cover {
+    @apply w-full h-full object-cover;
+  }
+
+  .pattern-overlay {
+    background-image:
+      radial-gradient(circle at 20% 50%, rgba(237, 171, 114, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(180, 140, 100, 0.06) 0%, transparent 40%),
+      radial-gradient(circle at 60% 80%, rgba(207, 84, 24, 0.05) 0%, transparent 45%);
+  }
+
+  .text-gradient {
+    @apply bg-gradient-to-r from-terra-700 via-terra-600 to-kente-700 bg-clip-text text-transparent;
+  }
+
+  .border-gradient {
+    border-image: linear-gradient(to right, #ad3e16, #d4a017) 1;
+  }
+}
+
+@layer utilities {
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-600 { animation-delay: 600ms; }
+  .delay-700 { animation-delay: 700ms; }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

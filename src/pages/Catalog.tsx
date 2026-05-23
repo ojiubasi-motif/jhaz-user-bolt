@@ -1,0 +1,608 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Heart, ArrowRight, Package, Palette, Tag } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price: number;
+  compare_at_price: number | null;
+  category: string;
+  fabric_type: string | null;
+  image_url: string | null;
+  is_customizable: boolean;
+  rating: number;
+  review_count: number;
+  tag: string | null;
+  gender: string;
+  occasion: string;
+  shipping_badge: string;
+}
+
+interface Filters {
+  category: string[];
+  gender: string[];
+  occasion: string[];
+  fabric_type: string[];
+  search: string;
+}
+
+const FILTER_OPTIONS = {
+  category: ['Agbada', 'Ankara', 'Kaftan', 'Iro & Buba', 'Dashiki', 'Boubou', 'Senator', 'Isiagu'],
+  gender: ['Men', 'Women', 'Kids'],
+  occasion: ['Wedding', 'Casual', 'Corporate'],
+  fabric_type: ['Ankara', 'Kente', 'Adire', 'Batik', 'Aso-Oke', 'Brocade', 'Cotton', 'Wool Blend'],
+} as const;
+
+const SECTION_TITLES: Record<keyof typeof FILTER_OPTIONS, string> = {
+  category: 'Category',
+  gender: 'Gender',
+  occasion: 'Occasion',
+  fabric_type: 'Fabric Type',
+};
+
+const INITIAL_FILTERS: Filters = {
+  category: [],
+  gender: [],
+  occasion: [],
+  fabric_type: [],
+  search: '',
+};
+
+export default function Catalog() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    category: true,
+    gender: true,
+    occasion: true,
+    fabric_type: true,
+  });
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  async function fetchProducts() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('is_featured', { ascending: false });
+
+    if (!error && data) {
+      setProducts(data as Product[]);
+    }
+    setLoading(false);
+  }
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // Search — check first so we can short-circuit early (mirrors apps/user pattern)
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        const matchesSearch =
+          p.name.toLowerCase().includes(q) ||
+          (p.description || '').toLowerCase().includes(q) ||
+          (p.category || '').toLowerCase().includes(q) ||
+          (p.fabric_type || '').toLowerCase().includes(q) ||
+          (p.occasion || '').toLowerCase().includes(q);
+        if (!matchesSearch) return false;
+      }
+
+      // Category — DB stores Title Case ('Agbada', 'Ankara') → exact match
+      if (filters.category.length > 0 && !filters.category.includes(p.category)) return false;
+
+      // Gender — DB stores lowercase ('men', 'women', 'kids'), filter stores Title Case ('Men')
+      // Normalize both sides to lowercase for a reliable comparison
+      if (
+        filters.gender.length > 0 &&
+        !filters.gender.some((g) => g.toLowerCase() === (p.gender || '').toLowerCase())
+      ) return false;
+
+      // Occasion — DB stores lowercase ('wedding', 'casual'), filter stores Title Case ('Wedding')
+      if (
+        filters.occasion.length > 0 &&
+        !filters.occasion.some((o) => o.toLowerCase() === (p.occasion || '').toLowerCase())
+      ) return false;
+
+      // Fabric type — DB stores Title Case ('Ankara', 'Kente') → exact match
+      if (filters.fabric_type.length > 0 && !filters.fabric_type.includes(p.fabric_type || '')) return false;
+
+      return true;
+    });
+  }, [products, filters]);
+
+  const activeFilterCount = useMemo(() => {
+    return filters.category.length + filters.gender.length + filters.occasion.length + filters.fabric_type.length;
+  }, [filters]);
+
+  // Data stats derived from full product list
+  const dataStats = useMemo(() => {
+    const customizable = products.filter(p => p.is_customizable).length;
+    const categories = new Set(products.map(p => p.category)).size;
+    return { total: products.length, customizable, categories };
+  }, [products]);
+
+  // Per-option counts — keyed by the display label used in FILTER_OPTIONS.
+  // gender and occasion are stored lowercase in DB ('men', 'wedding') but displayed
+  // Title Case ('Men', 'Wedding'). We build a lowercase→label lookup so counts align.
+  const optionCounts = useMemo(() => {
+    // Build lowercase → Title Case maps for the fields that differ
+    const genderMap = Object.fromEntries(
+      FILTER_OPTIONS.gender.map((g) => [g.toLowerCase(), g])
+    );
+    const occasionMap = Object.fromEntries(
+      FILTER_OPTIONS.occasion.map((o) => [o.toLowerCase(), o])
+    );
+
+    const counts: Record<string, Record<string, number>> = {
+      category: {}, gender: {}, occasion: {}, fabric_type: {},
+    };
+    products.forEach((p) => {
+      // Category — stored Title Case, matches filter labels directly
+      if (p.category) {
+        counts.category[p.category] = (counts.category[p.category] || 0) + 1;
+      }
+      // Gender — normalize lowercase DB value to Title Case label
+      if (p.gender) {
+        const label = genderMap[p.gender.toLowerCase()] ?? p.gender;
+        counts.gender[label] = (counts.gender[label] || 0) + 1;
+      }
+      // Occasion — normalize lowercase DB value to Title Case label
+      if (p.occasion) {
+        const label = occasionMap[p.occasion.toLowerCase()] ?? p.occasion;
+        counts.occasion[label] = (counts.occasion[label] || 0) + 1;
+      }
+      // Fabric type — stored Title Case, matches filter labels directly
+      if (p.fabric_type) {
+        counts.fabric_type[p.fabric_type] = (counts.fabric_type[p.fabric_type] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [products]);
+
+  const toggleFilter = useCallback((key: keyof Filters, value: string) => {
+    setFilters((prev) => {
+      const current = prev[key] as string[];
+      const updated = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      return { ...prev, [key]: updated };
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+  }, []);
+
+  const toggleSection = useCallback((section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  }, []);
+
+  // FilterSection and the sidebar content are rendered inline below,
+  // NOT defined as arrow-function components inside the render body.
+  // Defining components inside render causes React to remount them on every state
+  // change (new function reference = different component type), which breaks checkbox
+  // interaction. Instead we render JSX directly or pass props to the bottom-of-file
+  // helper functions.
+
+  return (
+    <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20">
+      {/* Page header */}
+      <div className="section-container pt-8 pb-6 animate-fade-up">
+        <span className="text-terra-600 font-body text-sm font-semibold tracking-widest uppercase">
+          Our Collection
+        </span>
+        <h1 className="heading-lg text-night-950 mt-1">Shop All</h1>
+        <p className="body-md mt-2">
+          Handcrafted African fashion, customizable to your vision.
+        </p>
+
+        {/* Data stats — shown once products load */}
+        {!loading && products.length > 0 && (
+          <div className="flex flex-wrap items-center gap-6 mt-6">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
+                <Package size={15} className="text-terra-700" />
+              </div>
+              <div>
+                <p className="font-display text-xl font-bold text-night-950 leading-none">{dataStats.total}</p>
+                <p className="text-[11px] text-earth-500 font-medium mt-0.5">Total Pieces</p>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-earth-200 hidden sm:block" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
+                <Palette size={15} className="text-terra-700" />
+              </div>
+              <div>
+                <p className="font-display text-xl font-bold text-night-950 leading-none">{dataStats.customizable}</p>
+                <p className="text-[11px] text-earth-500 font-medium mt-0.5">Customizable</p>
+              </div>
+            </div>
+            <div className="w-px h-8 bg-earth-200 hidden sm:block" />
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-terra-100 flex items-center justify-center">
+                <Tag size={15} className="text-terra-700" />
+              </div>
+              <div>
+                <p className="font-display text-xl font-bold text-night-950 leading-none">{dataStats.categories}</p>
+                <p className="text-[11px] text-earth-500 font-medium mt-0.5">Categories</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sticky search bar — stays below the fixed navbar (top-16/top-20) */}
+      <div className="sticky top-16 sm:top-20 z-30 bg-earth-50/95 backdrop-blur-md border-b border-earth-200/80 shadow-sm">
+        <div className="section-container py-3">
+          <div className="flex items-center gap-3">
+            {/* Search input */}
+            <div className="relative flex-1 max-w-md">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-earth-400" />
+              <input
+                type="text"
+                placeholder="Search dresses, fabrics, styles..."
+                value={filters.search}
+                onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                className="w-full pl-11 pr-10 py-2.5 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+              />
+              {filters.search && (
+                <button
+                  onClick={() => setFilters((prev) => ({ ...prev, search: '' }))}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-400 hover:text-night-950"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            {/* Mobile filter toggle */}
+            <button
+              onClick={() => setMobileFiltersOpen(true)}
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white border border-earth-200 rounded-xl text-sm font-medium text-night-950 hover:border-terra-400 transition-colors"
+            >
+              <SlidersHorizontal size={16} />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="w-5 h-5 bg-terra-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+
+            {/* Results count (right-aligned in search bar) */}
+            {!loading && (
+              <p className="hidden sm:block text-sm text-earth-500 shrink-0 ml-auto">
+                Showing{' '}
+                <span className="font-semibold text-night-950">{filteredProducts.length}</span>
+                {' '}piece{filteredProducts.length !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+
+          {/* Active filter tags */}
+          {activeFilterCount > 0 && (
+            <div className="flex flex-wrap items-center gap-2 pt-2">
+              {filters.category.map((v) => (
+                <FilterTag key={`cat-${v}`} label={v} onRemove={() => toggleFilter('category', v)} />
+              ))}
+              {filters.gender.map((v) => (
+                <FilterTag key={`gen-${v}`} label={v} onRemove={() => toggleFilter('gender', v)} />
+              ))}
+              {filters.occasion.map((v) => (
+                <FilterTag key={`occ-${v}`} label={v} onRemove={() => toggleFilter('occasion', v)} />
+              ))}
+              {filters.fabric_type.map((v) => (
+                <FilterTag key={`fab-${v}`} label={v} onRemove={() => toggleFilter('fabric_type', v)} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className="section-container py-6">
+        <div className="flex gap-8">
+
+          {/* Desktop sidebar — sticky, vertically scrollable when content overflows */}
+          <aside className="hidden lg:block w-64 shrink-0">
+            <div className="sticky top-[calc(5rem+3.5rem)] bg-white rounded-2xl border border-earth-200/60 shadow-sm">
+              {/* Sidebar header is outside the scroll container so it stays visible */}
+              <div className="flex items-center justify-between px-6 pt-6 pb-3 border-b border-earth-100">
+                <h3 className="font-display text-lg font-bold text-night-950">Filters</h3>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-terra-600 font-semibold hover:text-terra-800 transition-colors"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+              {/* Scrollable filter content — no overflow clipping on outer card */}
+              <div className="overflow-y-auto max-h-[calc(100vh-16rem)] px-6 py-4">
+                {(['category', 'gender', 'occasion', 'fabric_type'] as const).map((key) => (
+                  <FilterSectionItem
+                    key={key}
+                    title={SECTION_TITLES[key]}
+                    sectionKey={key}
+                    options={FILTER_OPTIONS[key]}
+                    selectedValues={filters[key]}
+                    isExpanded={expandedSections[key]}
+                    counts={optionCounts[key]}
+                    onToggleSection={toggleSection}
+                    onToggleFilter={toggleFilter}
+                  />
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* Product grid */}
+          <main className="flex-1 min-w-0">
+            {/* Mobile result count */}
+            {!loading && (
+              <p className="sm:hidden text-sm text-earth-500 mb-4">
+                <span className="font-semibold text-night-950">{filteredProducts.length}</span>
+                {' '}piece{filteredProducts.length !== 1 ? 's' : ''}
+              </p>
+            )}
+
+            {loading ? (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="animate-pulse bg-white rounded-xl overflow-hidden border border-earth-100">
+                    <div className="aspect-[3/4] bg-earth-200" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-3 bg-earth-200 rounded w-1/3" />
+                      <div className="h-4 bg-earth-200 rounded w-3/4" />
+                      <div className="h-5 bg-earth-200 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 rounded-full bg-earth-100 flex items-center justify-center mx-auto mb-4">
+                  <Search size={24} className="text-earth-400" />
+                </div>
+                <p className="font-display text-2xl font-semibold text-night-950 mb-2">No pieces found</p>
+                <p className="text-earth-500 mb-6">Try adjusting your filters or search terms.</p>
+                <button onClick={clearFilters} className="btn-secondary text-sm">
+                  Clear All Filters
+                </button>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* Mobile Filter Drawer */}
+      {mobileFiltersOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-night-950/50 backdrop-blur-sm lg:hidden"
+            onClick={() => setMobileFiltersOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-50 w-80 max-w-[85vw] bg-earth-50 shadow-2xl lg:hidden flex flex-col">
+            {/* Drawer header — stays fixed at top */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-earth-200 shrink-0">
+              <h3 className="font-display text-lg font-bold text-night-950">Filters</h3>
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="w-8 h-8 rounded-lg bg-earth-200 flex items-center justify-center text-night-950 hover:bg-earth-300 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Scrollable filter body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              {(['category', 'gender', 'occasion', 'fabric_type'] as const).map((key) => (
+                <FilterSectionItem
+                  key={key}
+                  title={SECTION_TITLES[key]}
+                  sectionKey={key}
+                  options={FILTER_OPTIONS[key]}
+                  selectedValues={filters[key]}
+                  isExpanded={expandedSections[key]}
+                  counts={optionCounts[key]}
+                  onToggleSection={toggleSection}
+                  onToggleFilter={toggleFilter}
+                />
+              ))}
+            </div>
+            {/* Drawer footer — stays fixed at bottom */}
+            <div className="shrink-0 px-6 py-4 bg-earth-50/95 backdrop-blur-sm border-t border-earth-200">
+              <button
+                onClick={() => setMobileFiltersOpen(false)}
+                className="w-full btn-primary rounded-xl"
+              >
+                Show {filteredProducts.length} Results
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function FilterTag({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-terra-100 text-terra-800 text-xs font-semibold rounded-full">
+      {label}
+      <button onClick={onRemove} className="hover:text-terra-950 transition-colors">
+        <X size={12} />
+      </button>
+    </span>
+  );
+}
+
+// ─── FilterSectionItem ───────────────────────────────────────────────────────
+// Defined OUTSIDE Catalog so React never remounts it on state change.
+// Receives all needed state as props — mirrors apps/user's FilterSection pattern.
+interface FilterSectionItemProps {
+  title: string;
+  sectionKey: keyof typeof FILTER_OPTIONS;
+  options: readonly string[];
+  selectedValues: string[];
+  isExpanded: boolean;
+  counts: Record<string, number>;
+  onToggleSection: (key: string) => void;
+  onToggleFilter: (key: keyof typeof FILTER_OPTIONS, value: string) => void;
+}
+
+function FilterSectionItem({
+  title,
+  sectionKey,
+  options,
+  selectedValues,
+  isExpanded,
+  counts,
+  onToggleSection,
+  onToggleFilter,
+}: FilterSectionItemProps) {
+  return (
+    <div className="border-b border-earth-200 pb-4 mb-4 last:border-0 last:mb-0 last:pb-0">
+      <button
+        onClick={() => onToggleSection(sectionKey)}
+        className="flex items-center justify-between w-full text-left group"
+      >
+        <span className="font-display text-sm font-semibold text-night-950 group-hover:text-terra-700 transition-colors">
+          {title}
+        </span>
+        {isExpanded ? (
+          <ChevronUp size={16} className="text-earth-500" />
+        ) : (
+          <ChevronDown size={16} className="text-earth-500" />
+        )}
+      </button>
+      {isExpanded && (
+        <div className="mt-3 space-y-2">
+          {options.map((option) => {
+            const isChecked = selectedValues.includes(option);
+            const count = counts?.[option];
+            return (
+              <label
+                key={option}
+                className="flex items-center gap-3 cursor-pointer group/option"
+              >
+                <span
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+                    isChecked
+                      ? 'bg-terra-600 border-terra-600'
+                      : 'border-earth-400 group-hover/option:border-terra-400'
+                  }`}
+                  onClick={() => onToggleFilter(sectionKey, option)}
+                >
+                  {isChecked && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span
+                  className="flex-1 text-sm text-earth-700 group-hover/option:text-night-950 transition-colors"
+                  onClick={() => onToggleFilter(sectionKey, option)}
+                >
+                  {option}
+                </span>
+                {count !== undefined && (
+                  <span className="text-xs text-earth-400 tabular-nums">{count}</span>
+                )}
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProductCard({ product }: { product: Product }) {
+  const [wishlist, setWishlist] = useState(false);
+
+  const badgeColor = product.shipping_badge === 'Ready to Ship'
+    ? 'bg-savanna-600/90 text-white'
+    : 'bg-night-950/80 text-earth-50';
+
+  return (
+    <div className="group flex flex-col rounded-xl overflow-hidden bg-white border border-earth-100 shadow-sm card-hover">
+      {/* Image */}
+      <div className="relative aspect-[3/4] overflow-hidden bg-earth-100">
+        <img
+          src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
+          alt={product.name}
+          className="img-cover transition-transform duration-700 group-hover:scale-105"
+          loading="lazy"
+        />
+
+        {/* Tag badge */}
+        {product.tag && (
+          <span className="absolute top-3 left-3 px-3 py-1 bg-terra-600 text-white text-[10px] font-bold tracking-wider uppercase rounded-full">
+            {product.tag}
+          </span>
+        )}
+
+        {/* Wishlist */}
+        <button
+          onClick={(e) => { e.preventDefault(); setWishlist(!wishlist); }}
+          className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
+          aria-label="Toggle wishlist"
+        >
+          <Heart size={16} className={wishlist ? 'fill-red-500 text-red-500' : 'text-night-800'} />
+        </button>
+
+        {/* Shipping badge */}
+        <span className={`absolute bottom-3 left-3 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-full backdrop-blur-sm ${badgeColor}`}>
+          {product.shipping_badge}
+        </span>
+
+        {/* Hover overlay action */}
+        <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+          <Link to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
+            Customize & Order
+            <ArrowRight size={14} />
+          </Link>
+        </div>
+      </div>
+
+      {/* Info — padded content section, inspired by apps/user ProductCard */}
+      <div className="flex flex-col flex-1 gap-2 p-4">
+        <div>
+          <span className="text-[10px] text-earth-500 font-medium tracking-wider uppercase">
+            {product.category}
+            {product.fabric_type && product.fabric_type !== product.category && ` / ${product.fabric_type}`}
+          </span>
+          <h3 className="font-display text-base font-semibold text-night-950 group-hover:text-terra-700 transition-colors leading-snug mt-0.5">
+            {product.name}
+          </h3>
+        </div>
+        <div className="flex items-center gap-2 mt-auto">
+          <span className="font-display text-lg font-bold text-night-950">
+            ${product.price}
+          </span>
+          {product.compare_at_price && (
+            <span className="text-sm text-earth-400 line-through">
+              ${product.compare_at_price}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
