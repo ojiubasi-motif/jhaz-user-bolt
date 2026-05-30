@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Heart, ArrowRight, Package, Palette, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -52,9 +52,21 @@ const INITIAL_FILTERS: Filters = {
   search: '',
 };
 
+// Maps homepage category names → matching catalog category filter values
+const HOMEPAGE_CATEGORY_MAP: Record<string, string[]> = {
+  'Dresses & Gowns':      ['Ankara', 'Iro & Buba'],
+  'Tops & Blouses':       ['Dashiki', 'Ankara'],
+  'Bottoms & Skirts':     ['Iro & Buba'],
+  'Jackets & Outerwear':  ['Boubou', 'Agbada'],
+  'Matching Sets':        ['Senator', 'Agbada'],
+  'Accessories':          ['Isiagu'],
+};
+
 export default function Catalog() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [homepageCategoryLabel, setHomepageCategoryLabel] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -64,9 +76,23 @@ export default function Catalog() {
     fabric_type: true,
   });
 
+  // Fetch products on mount
   useEffect(() => {
     fetchProducts();
   }, []);
+
+  // Read ?category= param and apply matching filters whenever search params change
+  useEffect(() => {
+    const cat = searchParams.get('category');
+    if (cat && HOMEPAGE_CATEGORY_MAP[cat]) {
+      setHomepageCategoryLabel(cat);
+      setFilters((prev) => ({ ...prev, category: HOMEPAGE_CATEGORY_MAP[cat] }));
+    } else {
+      // Clear category filter if no valid category param
+      setHomepageCategoryLabel(null);
+      setFilters((prev) => ({ ...prev, category: [] }));
+    }
+  }, [searchParams]);
 
   async function fetchProducts() {
     setLoading(true);
@@ -179,7 +205,9 @@ export default function Catalog() {
 
   const clearFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
-  }, []);
+    setHomepageCategoryLabel(null);
+    setSearchParams({});
+  }, [setSearchParams]);
 
   const toggleSection = useCallback((section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -289,9 +317,25 @@ export default function Catalog() {
           </div>
 
           {/* Active filter tags */}
-          {activeFilterCount > 0 && (
+          {(activeFilterCount > 0 || homepageCategoryLabel) && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
-              {filters.category.map((v) => (
+              {/* Homepage category tag */}
+              {homepageCategoryLabel && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-terra-100 text-terra-700 text-xs font-semibold border border-terra-200">
+                  Category: {homepageCategoryLabel}
+                  <button
+                    onClick={() => {
+                      setHomepageCategoryLabel(null);
+                      setFilters((prev) => ({ ...prev, category: [] }));
+                      setSearchParams({});
+                    }}
+                    className="ml-0.5 hover:text-terra-900"
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              )}
+              {!homepageCategoryLabel && filters.category.map((v) => (
                 <FilterTag key={`cat-${v}`} label={v} onRemove={() => toggleFilter('category', v)} />
               ))}
               {filters.gender.map((v) => (
@@ -594,11 +638,11 @@ function ProductCard({ product }: { product: Product }) {
         </div>
         <div className="flex items-center gap-2 mt-auto">
           <span className="font-display text-lg font-bold text-night-950">
-            ${product.price}
+            ₦{product.price.toLocaleString('en-NG')}
           </span>
           {product.compare_at_price && (
             <span className="text-sm text-earth-400 line-through">
-              ${product.compare_at_price}
+              ₦{product.compare_at_price.toLocaleString('en-NG')}
             </span>
           )}
         </div>

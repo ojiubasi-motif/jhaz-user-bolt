@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Check, ChevronLeft, ChevronRight, Upload, Info,
   CreditCard, Building2, Phone, Smartphone,
@@ -49,6 +49,7 @@ interface DeliveryDetails {
   address: string;
   city: string;
   state: string;
+  country: string;
   preferredDate: string;
   deliveryMethod: DeliveryMethod;
 }
@@ -71,10 +72,11 @@ const STEPS = [
   { id: 2, name: 'Fabric' },
   { id: 3, name: 'Measurements' },
   { id: 4, name: 'Personalize' },
-  { id: 5, name: 'Delivery' },
-  { id: 6, name: 'Summary' },
-  { id: 7, name: 'Payment' },
-  { id: 8, name: 'Confirmation' },
+  { id: 5, name: 'Cart' },
+  { id: 6, name: 'Delivery' },
+  { id: 7, name: 'Summary' },
+  { id: 8, name: 'Payment' },
+  { id: 9, name: 'Done' },
 ];
 
 const OUTFIT_STYLES = [
@@ -134,11 +136,15 @@ const ACCESSORY_OPTIONS = [
   { id: 'jewelry', label: 'Jewellery Set' },
 ];
 
-const GHANAIAN_REGIONS = [
-  'Greater Accra', 'Ashanti', 'Western', 'Central', 'Eastern',
-  'Volta', 'Northern', 'Upper East', 'Upper West', 'Bono',
-  'Bono East', 'Ahafo', 'Oti', 'Savannah', 'North East', 'Western North',
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+  'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu',
+  'FCT (Abuja)', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina',
+  'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo',
+  'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
 ];
+
+const SUPPORTED_COUNTRIES = ['Nigeria'] as const;
 
 const MEASUREMENT_GUIDES: Record<string, string> = {
   chest: 'Measure around the fullest part of your chest, keeping the tape horizontal.',
@@ -153,7 +159,29 @@ const MEASUREMENT_GUIDES: Record<string, string> = {
 // ═══════════════════════════════════════════════════════
 
 function formatNaira(amount: number): string {
-  return new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+}
+
+// Cart item = one complete customization cycle
+interface CartItem {
+  id: string;
+  order: OrderData;
+}
+
+const CART_KEY = 'jhaz_cart';
+
+function loadCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveCart(items: CartItem[]) {
+  localStorage.setItem(CART_KEY, JSON.stringify(items));
+  window.dispatchEvent(new Event('jhaz-cart-updated'));
 }
 
 function calculateOrderTotal(order: OrderData) {
@@ -187,7 +215,23 @@ function formatDate(date: Date): string {
 // ═══════════════════════════════════════════════════════
 
 export default function Order() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Derive step from URL — default to 1
+  const currentStep = useMemo(() => {
+    const s = parseInt(searchParams.get('step') || '1', 10);
+    return isNaN(s) || s < 1 || s > 9 ? 1 : s;
+  }, [searchParams]);
+
+  const goToStep = useCallback((step: number) => {
+    setSearchParams({ step: String(step) });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setSearchParams]);
+
+  const handleNext = useCallback(() => goToStep(currentStep + 1), [currentStep, goToStep]);
+  const handleBack = useCallback(() => goToStep(currentStep - 1), [currentStep, goToStep]);
+
   const [paymentReference, setPaymentReference] = useState('');
   const [orderData, setOrderData] = useState<OrderData>({
     style: null,
@@ -198,21 +242,49 @@ export default function Order() {
     promoCode: '',
   });
 
-  const goToStep = useCallback((step: number) => {
-    setCurrentStep(step);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  // Multi-item cart
+  const [cartItems, setCartItems] = useState<CartItem[]>(loadCart);
 
-  const handleNext = useCallback(() => goToStep(currentStep + 1), [currentStep, goToStep]);
-  const handleBack = useCallback(() => goToStep(currentStep - 1), [currentStep, goToStep]);
+  // Keep localStorage in sync whenever cartItems changes
+  useEffect(() => {
+    saveCart(cartItems);
+  }, [cartItems]);
 
   const updateOrderData = useCallback(<K extends keyof OrderData>(key: K, value: OrderData[K]) => {
     setOrderData((prev) => ({ ...prev, [key]: value }));
   }, []);
 
+  // "Add to Cart" — called from Step 4
+  const handleAddToCart = useCallback(() => {
+    const personalization: import('./Order').never extends never
+      ? Personalization
+      : Personalization = orderData.personalization ?? {
+      embroideryStyle: 'none',
+      necklineType: 'round',
+      sleeveLength: 'full',
+      addLining: false,
+      accessories: [],
+      specialRequests: '',
+    };
+    const item: CartItem = {
+      id: `cart_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      order: { ...orderData, personalization },
+    };
+    setCartItems((prev) => [...prev, item]);
+    // Reset wizard for potential next item
+    setOrderData({ style: null, fabric: null, measurements: null, personalization: null, delivery: null, promoCode: '' });
+    goToStep(5);
+  }, [orderData, goToStep]);
+
+  const handleRemoveFromCart = useCallback((id: string) => {
+    setCartItems((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
   const handlePaymentComplete = useCallback((ref: string) => {
     setPaymentReference(ref);
-    goToStep(8);
+    // Clear cart on successful payment
+    setCartItems([]);
+    goToStep(9);
   }, [goToStep]);
 
   return (
@@ -264,11 +336,19 @@ export default function Order() {
             <StepPersonalization
               personalization={orderData.personalization}
               onUpdate={(p) => updateOrderData('personalization', p)}
-              onNext={handleNext}
+              onAddToCart={handleAddToCart}
               onBack={handleBack}
             />
           )}
           {currentStep === 5 && (
+            <StepCart
+              cartItems={cartItems}
+              onRemove={handleRemoveFromCart}
+              onAddAnother={() => navigate('/catalog')}
+              onCheckout={() => goToStep(6)}
+            />
+          )}
+          {currentStep === 6 && (
             <StepDelivery
               delivery={orderData.delivery}
               onUpdate={(d) => updateOrderData('delivery', d)}
@@ -276,25 +356,28 @@ export default function Order() {
               onBack={handleBack}
             />
           )}
-          {currentStep === 6 && (
+          {currentStep === 7 && (
             <StepOrderSummary
               order={orderData}
+              cartItems={cartItems}
               onEditStep={goToStep}
               onApplyPromo={(code) => updateOrderData('promoCode', code)}
               onNext={handleNext}
               onBack={handleBack}
             />
           )}
-          {currentStep === 7 && (
+          {currentStep === 8 && (
             <StepPayment
               order={orderData}
+              cartItems={cartItems}
               onComplete={handlePaymentComplete}
               onBack={handleBack}
             />
           )}
-          {currentStep === 8 && (
+          {currentStep === 9 && (
             <StepConfirmation
               order={orderData}
+              cartItems={cartItems}
               paymentReference={paymentReference}
             />
           )}
@@ -701,12 +784,12 @@ function StepMeasurements({
 function StepPersonalization({
   personalization,
   onUpdate,
-  onNext,
+  onAddToCart,
   onBack,
 }: {
   personalization: Personalization | null;
   onUpdate: (p: Personalization) => void;
-  onNext: () => void;
+  onAddToCart: () => void;
   onBack: () => void;
 }) {
   const [form, setForm] = useState<Personalization>(
@@ -874,7 +957,22 @@ function StepPersonalization({
         />
       </div>
 
-      <StepNav onBack={onBack} onNext={onNext} nextLabel="Continue to Delivery" />
+      <div className="flex justify-between pt-6 border-t border-earth-100 mt-6">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors"
+        >
+          <ChevronLeft size={16} />
+          Back
+        </button>
+        <button
+          onClick={onAddToCart}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold btn-primary"
+        >
+          <ShoppingBag size={16} />
+          Add to Cart
+        </button>
+      </div>
     </div>
   );
 }
@@ -895,8 +993,11 @@ function StepDelivery({
   onBack: () => void;
 }) {
   const [form, setForm] = useState<DeliveryDetails>(
-    delivery || { fullName: '', phoneNumber: '', address: '', city: '', state: '', preferredDate: '', deliveryMethod: 'standard' },
+    delivery || { fullName: '', phoneNumber: '', address: '', city: '', state: '', country: 'Nigeria', preferredDate: '', deliveryMethod: 'standard' },
   );
+
+  // unused import suppressor – ShoppingBag used in Step 4 patch above
+  void ShoppingBag;
 
   const handleChange = <K extends keyof DeliveryDetails>(field: K, value: DeliveryDetails[K]) => {
     const updated = { ...form, [field]: value };
@@ -925,7 +1026,7 @@ function StepDelivery({
           </div>
           <div>
             <label className="block text-sm font-semibold text-night-950 mb-1.5">Phone Number</label>
-            <input className={inputCls} type="tel" placeholder="+233 XX XXX XXXX" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} />
+            <input className={inputCls} type="tel" placeholder="+234 XXX XXX XXXX" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} />
           </div>
         </div>
       </div>
@@ -933,6 +1034,18 @@ function StepDelivery({
       {/* Address */}
       <div className="space-y-4">
         <h3 className="font-display text-base font-semibold text-night-950">Delivery Address</h3>
+        <div>
+          <label className="block text-sm font-semibold text-night-950 mb-1.5">Country</label>
+          <select
+            value={form.country}
+            onChange={(e) => handleChange('country', e.target.value)}
+            className={inputCls}
+          >
+            {SUPPORTED_COUNTRIES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="block text-sm font-semibold text-night-950 mb-1.5">Street Address</label>
           <input className={inputCls} placeholder="Enter your street address" value={form.address} onChange={(e) => handleChange('address', e.target.value)} />
@@ -943,14 +1056,14 @@ function StepDelivery({
             <input className={inputCls} placeholder="Enter city" value={form.city} onChange={(e) => handleChange('city', e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-night-950 mb-1.5">Region</label>
+            <label className="block text-sm font-semibold text-night-950 mb-1.5">State</label>
             <select
               value={form.state}
               onChange={(e) => handleChange('state', e.target.value)}
               className={inputCls}
             >
-              <option value="">Select region</option>
-              {GHANAIAN_REGIONS.map((r) => (
+              <option value="">Select state</option>
+              {NIGERIAN_STATES.map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
@@ -1012,17 +1125,135 @@ function StepDelivery({
 }
 
 // ═══════════════════════════════════════════════════════
+// Step 5 – Cart
+// ═══════════════════════════════════════════════════════
+
+function StepCart({
+  cartItems,
+  onRemove,
+  onAddAnother,
+  onCheckout,
+}: {
+  cartItems: CartItem[];
+  onRemove: (id: string) => void;
+  onAddAnother: () => void;
+  onCheckout: () => void;
+}) {
+  const cartTotal = useMemo(
+    () => cartItems.reduce((sum, item) => {
+      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+      return sum + basePrice + customizationFee;
+    }, 0),
+    [cartItems]
+  );
+
+  if (cartItems.length === 0) {
+    return (
+      <div className="space-y-6 text-center py-8">
+        <div className="flex justify-center">
+          <div className="w-20 h-20 rounded-full bg-earth-100 flex items-center justify-center">
+            <ShoppingBag size={36} className="text-earth-400" />
+          </div>
+        </div>
+        <div>
+          <h2 className="font-display text-2xl font-bold text-night-950">Your Cart is Empty</h2>
+          <p className="mt-2 text-earth-500 text-sm">Browse our catalog and customise your perfect outfit.</p>
+        </div>
+        <Link
+          to="/catalog"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm btn-primary"
+        >
+          Start Shopping
+          <ChevronRight size={16} />
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="font-display text-2xl font-bold text-night-950">Your Cart</h2>
+        <p className="mt-1 text-earth-500 text-sm">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''} ready for checkout.</p>
+      </div>
+
+      <div className="space-y-4">
+        {cartItems.map((item) => {
+          const style = OUTFIT_STYLES.find((s) => s.id === item.order.style);
+          const fabric = FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId);
+          const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+          const itemTotal = basePrice + customizationFee;
+          return (
+            <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl border border-earth-200 bg-earth-50">
+              {style && (
+                <img src={style.image} alt={style.name}
+                  className="w-16 h-20 object-cover rounded-lg shrink-0 border border-earth-200" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-sm font-bold text-night-950">{style?.name ?? 'Custom Outfit'}</p>
+                <div className="mt-1 space-y-0.5 text-[11px] text-earth-500">
+                  {fabric && <p>Fabric: {fabric.name}</p>}
+                  {item.order.personalization && (
+                    <>
+                      <p>Embroidery: {item.order.personalization.embroideryStyle}</p>
+                      <p>Neckline: {item.order.personalization.necklineType} · Sleeves: {item.order.personalization.sleeveLength}</p>
+                    </>
+                  )}
+                </div>
+                <p className="mt-2 text-sm font-bold text-kente-600">{formatNaira(itemTotal)}</p>
+              </div>
+              <button
+                onClick={() => onRemove(item.id)}
+                className="p-1.5 rounded-lg text-earth-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Cart total */}
+      <div className="flex justify-between items-center p-4 rounded-xl bg-night-950 text-white">
+        <span className="font-semibold text-earth-300">Items Total</span>
+        <span className="font-display text-xl font-bold text-kente-400">{formatNaira(cartTotal)}</span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-earth-100">
+        <button
+          onClick={onAddAnother}
+          className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors"
+        >
+          <Package size={16} />
+          Add Another Outfit
+        </button>
+        <button
+          onClick={onCheckout}
+          className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all"
+        >
+          Checkout
+          <ChevronRight size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════
 // Step 6 – Order Summary
 // ═══════════════════════════════════════════════════════
 
 function StepOrderSummary({
   order,
+  cartItems,
   onEditStep,
   onApplyPromo,
   onNext,
   onBack,
 }: {
   order: OrderData;
+  cartItems: CartItem[];
   onEditStep: (step: number) => void;
   onApplyPromo: (code: string) => void;
   onNext: () => void;
@@ -1032,6 +1263,16 @@ function StepOrderSummary({
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState(order.promoCode === 'JHAZ10');
 
+  const itemsSubtotal = useMemo(
+    () => cartItems.reduce((sum, item) => {
+      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+      return sum + basePrice + customizationFee;
+    }, 0),
+    [cartItems]
+  );
+  const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
+  const discount = order.promoCode === 'JHAZ10' ? (itemsSubtotal + deliveryFee) * 0.1 : 0;
+  const grandTotal = itemsSubtotal + deliveryFee - discount;
   const pricing = useMemo(() => calculateOrderTotal(order), [order]);
   const style = OUTFIT_STYLES.find((s) => s.id === order.style);
   const fabric = FABRIC_PRESETS.find((f) => f.id === order.fabric?.presetId);
@@ -1118,12 +1359,12 @@ function StepOrderSummary({
           </div>
         </SummaryCard>
 
-        <SummaryCard title="Delivery" stepNum={5}>
+        <SummaryCard title="Delivery" stepNum={6}>
           <h3 className="text-sm font-semibold text-night-950">Delivery</h3>
           <div className="mt-1 space-y-0.5 text-xs text-earth-600">
             <p>{order.delivery?.fullName} · {order.delivery?.phoneNumber}</p>
             <p>{order.delivery?.address}</p>
-            <p>{order.delivery?.city}, {order.delivery?.state}</p>
+            <p>{order.delivery?.city}, {order.delivery?.state}, Nigeria</p>
             <p className="font-semibold text-night-950 mt-1">
               {order.delivery?.deliveryMethod === 'express' ? 'Express' : 'Standard'} Delivery
             </p>
@@ -1161,16 +1402,15 @@ function StepOrderSummary({
       <div className="border border-earth-200 rounded-xl p-4 bg-white">
         <h3 className="text-sm font-semibold text-night-950 mb-3">Price Breakdown</h3>
         <div className="space-y-2 text-sm">
-          <div className="flex justify-between text-earth-600"><span>Outfit Base Price</span><span>{formatNaira(pricing.basePrice)}</span></div>
-          <div className="flex justify-between text-earth-600"><span>Customisation Fee</span><span>{formatNaira(pricing.customizationFee)}</span></div>
-          <div className="flex justify-between text-earth-600"><span>Delivery Fee</span><span>{formatNaira(pricing.deliveryFee)}</span></div>
-          {pricing.discount > 0 && (
-            <div className="flex justify-between text-savanna-700"><span>Discount</span><span>-{formatNaira(pricing.discount)}</span></div>
+          <div className="flex justify-between text-earth-600"><span>Items Subtotal ({cartItems.length})</span><span>{formatNaira(itemsSubtotal)}</span></div>
+          <div className="flex justify-between text-earth-600"><span>Delivery Fee</span><span>{formatNaira(deliveryFee)}</span></div>
+          {discount > 0 && (
+            <div className="flex justify-between text-savanna-700"><span>Discount (JHAZ10)</span><span>-{formatNaira(discount)}</span></div>
           )}
           <div className="border-t border-earth-200 pt-2 mt-2">
             <div className="flex justify-between font-bold text-lg">
               <span className="text-night-950">Total</span>
-              <span className="text-terra-700">{formatNaira(pricing.total)}</span>
+              <span className="text-terra-700">{formatNaira(grandTotal)}</span>
             </div>
           </div>
         </div>
@@ -1193,10 +1433,12 @@ function StepOrderSummary({
 
 function StepPayment({
   order,
+  cartItems,
   onComplete,
   onBack,
 }: {
   order: OrderData;
+  cartItems: CartItem[];
   onComplete: (ref: string) => void;
   onBack: () => void;
 }) {
@@ -1211,7 +1453,15 @@ function StepPayment({
   const [selectedMethod, setSelectedMethod] = useState<PayMethod>('card');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const pricing = useMemo(() => calculateOrderTotal(order), [order]);
+  const pricing = useMemo(() => {
+    const itemsSubtotal = cartItems.reduce((sum, item) => {
+      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+      return sum + basePrice + customizationFee;
+    }, 0);
+    const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
+    const total = itemsSubtotal + deliveryFee;
+    return { total };
+  }, [order, cartItems]);
 
   const handlePay = async () => {
     setIsProcessing(true);
@@ -1309,7 +1559,7 @@ function StepPayment({
 
       {selectedMethod === 'mobile' && (
         <div className="border border-earth-200 rounded-xl p-4 bg-earth-50">
-          <p className="text-sm text-earth-600">Pay using your mobile money wallet. Supported: MTN MoMo, Vodafone Cash, AirtelTigo Money.</p>
+          <p className="text-sm text-earth-600">Pay using your mobile money wallet. Supported: OPay, Palmpay, Kuda, GTB Mobile.</p>
         </div>
       )}
 
@@ -1364,16 +1614,25 @@ function StepPayment({
 
 function StepConfirmation({
   order,
+  cartItems,
   paymentReference,
 }: {
   order: OrderData;
+  cartItems: CartItem[];
   paymentReference: string;
 }) {
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
 
-  const pricing = useMemo(() => calculateOrderTotal(order), [order]);
-  const style = OUTFIT_STYLES.find((s) => s.id === order.style);
+  const totalPaid = useMemo(() => {
+    const itemsSubtotal = cartItems.reduce((sum, item) => {
+      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+      return sum + basePrice + customizationFee;
+    }, 0);
+    const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
+    return itemsSubtotal + deliveryFee;
+  }, [order, cartItems]);
+  const style = OUTFIT_STYLES.find((s) => s.id === cartItems[0]?.order?.style || order.style);
   const orderId = `JHZ-${Date.now().toString(36).toUpperCase()}`;
 
   const estimatedDelivery = order.delivery?.deliveryMethod === 'express'
@@ -1431,12 +1690,12 @@ function StepConfirmation({
 
         {/* Summary */}
         <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between"><span className="text-earth-500">Item</span><span className="font-semibold text-night-950">{style?.name}</span></div>
+          <div className="flex justify-between"><span className="text-earth-500">Items</span><span className="font-semibold text-night-950">{cartItems.length} outfit{cartItems.length !== 1 ? 's' : ''}</span></div>
           <div className="flex justify-between"><span className="text-earth-500">Delivery Method</span><span className="font-semibold text-night-950 capitalize">{order.delivery?.deliveryMethod}</span></div>
-          <div className="flex justify-between"><span className="text-earth-500">Delivery Address</span><span className="font-semibold text-night-950 text-right max-w-[200px]">{order.delivery?.city}, {order.delivery?.state}</span></div>
+          <div className="flex justify-between"><span className="text-earth-500">Delivery Address</span><span className="font-semibold text-night-950 text-right max-w-[200px]">{order.delivery?.city}, {order.delivery?.state}, Nigeria</span></div>
           <div className="flex justify-between pt-2 border-t border-earth-200">
             <span className="font-bold text-night-950">Total Paid</span>
-            <span className="font-bold text-terra-700">{formatNaira(pricing.total)}</span>
+            <span className="font-bold text-terra-700">{formatNaira(totalPaid)}</span>
           </div>
         </div>
       </div>
@@ -1479,7 +1738,7 @@ function StepConfirmation({
           Questions? Contact us at{' '}
           <a href="mailto:info@jhaz-imprints.com" className="text-terra-600 hover:underline">info@jhaz-imprints.com</a>
           {' '}or call{' '}
-          <a href="tel:+233241234567" className="text-terra-600 hover:underline">+233 24 123 4567</a>
+          <a href="tel:+2348031234567" className="text-terra-600 hover:underline">+234 803 123 4567</a>
         </p>
       </div>
     </div>

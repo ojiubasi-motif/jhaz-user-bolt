@@ -10,10 +10,43 @@ const navLinks = [
   { label: 'Heritage', href: '/#heritage' },
 ];
 
+function useCartCount() {
+  const [count, setCount] = useState(0);
+
+  const readCount = () => {
+    try {
+      const raw = localStorage.getItem('jhaz_cart');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setCount(Array.isArray(parsed) ? parsed.length : 0);
+      } else {
+        setCount(0);
+      }
+    } catch {
+      setCount(0);
+    }
+  };
+
+  useEffect(() => {
+    readCount();
+    // Listen for cross-tab storage changes
+    window.addEventListener('storage', readCount);
+    // Listen for same-tab updates dispatched by Order.tsx
+    window.addEventListener('jhaz-cart-updated', readCount);
+    return () => {
+      window.removeEventListener('storage', readCount);
+      window.removeEventListener('jhaz-cart-updated', readCount);
+    };
+  }, []);
+
+  return count;
+}
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const cartCount = useCartCount();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -22,6 +55,13 @@ export default function Navbar() {
   }, []);
 
   const isHome = location.pathname === '/';
+
+  const CartBadge = () =>
+    cartCount > 0 ? (
+      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-terra-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+        {cartCount}
+      </span>
+    ) : null;
 
   return (
     <nav
@@ -59,12 +99,14 @@ export default function Navbar() {
             <Link to="/catalog" className="p-2 text-night-800 hover:text-terra-600 transition-colors" aria-label="Search">
               <Search size={20} />
             </Link>
-            <button className="p-2 text-night-800 hover:text-terra-600 transition-colors relative" aria-label="Cart">
+            <Link
+              to="/order?step=5"
+              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative"
+              aria-label="Cart"
+            >
               <ShoppingBag size={20} />
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-terra-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                2
-              </span>
-            </button>
+              <CartBadge />
+            </Link>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -100,12 +142,15 @@ export default function Navbar() {
               <Link to="/catalog" onClick={() => setIsOpen(false)} className="p-2 text-night-800" aria-label="Search">
                 <Search size={20} />
               </Link>
-              <button className="p-2 text-night-800 relative" aria-label="Cart">
+              <Link
+                to="/order?step=5"
+                onClick={() => setIsOpen(false)}
+                className="p-2 text-night-800 relative"
+                aria-label="Cart"
+              >
                 <ShoppingBag size={20} />
-                <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-terra-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                  2
-                </span>
-              </button>
+                <CartBadge />
+              </Link>
             </div>
           </div>
         </div>

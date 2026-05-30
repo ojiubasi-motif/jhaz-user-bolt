@@ -1,12 +1,13 @@
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, ArrowRight } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
 import { useInView } from '../hooks/useInView';
 
 const products = [
   {
     id: 1,
     name: 'The Heritage Ankara Dress',
-    price: 135,
-    originalPrice: 165,
+    price: 45000,
+    originalPrice: 55000,
     rating: 4.9,
     reviews: 128,
     image: 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -15,7 +16,7 @@ const products = [
   {
     id: 2,
     name: 'Kente Accented Blazer',
-    price: 195,
+    price: 65000,
     rating: 4.8,
     reviews: 87,
     image: 'https://images.pexels.com/photos/934070/pexels-photo-934070.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -24,7 +25,7 @@ const products = [
   {
     id: 3,
     name: 'Adire Flow Pants',
-    price: 95,
+    price: 35000,
     rating: 4.7,
     reviews: 64,
     image: 'https://images.pexels.com/photos/985635/pexels-photo-985635.jpeg?auto=compress&cs=tinysrgb&w=600',
@@ -66,7 +67,7 @@ export default function Bestsellers() {
                   {/* Sale tag */}
                   {product.originalPrice && (
                     <span className="absolute top-4 left-4 px-3 py-1 bg-terra-600 text-white text-xs font-bold tracking-wider uppercase rounded-full">
-                      Save ${product.originalPrice - product.price}
+                      Save ₦{(product.originalPrice - product.price).toLocaleString('en-NG')}
                     </span>
                   )}
 
@@ -84,9 +85,16 @@ export default function Bestsellers() {
                       </span>
                     </div>
                   )}
+                  {/* Quick action overlay */}
+                  <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                    <RouterLink to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
+                      Customize & Order
+                      <ArrowRight size={14} />
+                    </RouterLink>
+                  </div>
                 </div>
 
-                <div className="mt-5 space-y-2">
+                <div className="flex flex-col flex-1 gap-2 p-4">
                   <div className="flex items-center gap-1">
                     {Array.from({ length: 5 }).map((_, si) => (
                       <Star
@@ -104,11 +112,11 @@ export default function Bestsellers() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="font-display text-xl font-bold text-night-950">
-                      ${product.price}
+                      ₦{product.price.toLocaleString('en-NG')}
                     </span>
                     {product.originalPrice && (
                       <span className="text-sm text-earth-400 line-through">
-                        ${product.originalPrice}
+                        ₦{product.originalPrice.toLocaleString('en-NG')}
                       </span>
                     )}
                   </div>

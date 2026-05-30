@@ -6,7 +6,7 @@ const products = [
   {
     id: 1,
     name: 'Ankara Wrap Dress',
-    price: 135,
+    price: 45000,
     image: 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600',
     tag: 'New',
     customizable: true,
@@ -14,7 +14,7 @@ const products = [
   {
     id: 2,
     name: 'Kente Bomber Jacket',
-    price: 180,
+    price: 65000,
     image: 'https://images.pexels.com/photos/934070/pexels-photo-934070.jpeg?auto=compress&cs=tinysrgb&w=600',
     tag: 'Bestseller',
     customizable: true,
@@ -22,7 +22,7 @@ const products = [
   {
     id: 3,
     name: 'Dashiki Oversized Tee',
-    price: 65,
+    price: 25000,
     image: 'https://images.pexels.com/photos/5710203/pexels-photo-5710203.jpeg?auto=compress&cs=tinysrgb&w=600',
     tag: 'New',
     customizable: true,
@@ -30,7 +30,7 @@ const products = [
   {
     id: 4,
     name: 'Adire Palazzo Pants',
-    price: 95,
+    price: 35000,
     image: 'https://images.pexels.com/photos/985635/pexels-photo-985635.jpeg?auto=compress&cs=tinysrgb&w=600',
     tag: 'Limited',
     customizable: true,
@@ -92,18 +92,19 @@ export default function NewArrivals() {
                   )}
                   {/* Quick action overlay */}
                   <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <button className="w-full btn-primary text-xs py-3 rounded-lg">
+                    <Link to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
                       Customize & Order
-                    </button>
+                      <ArrowRight size={14} />
+                    </Link>
                   </div>
                 </div>
                 {/* Info */}
-                <div className="mt-4 space-y-1">
+                <div className="flex flex-col flex-1 gap-2 p-4">
                   <h3 className="font-display text-base font-semibold text-night-950 group-hover:text-terra-700 transition-colors">
                     {product.name}
                   </h3>
                   <p className="font-body text-sm text-earth-500">
-                    from ${product.price}
+                    from ₦{product.price.toLocaleString('en-NG')}
                   </p>
                 </div>
               </div>

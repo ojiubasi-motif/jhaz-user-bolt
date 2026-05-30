@@ -61,7 +61,7 @@ export default function Categories() {
           {categories.map((cat, i) => (
             <Link
               key={cat.name}
-              to="/catalog"
+              to={`/catalog?category=${encodeURIComponent(cat.name)}`}
               className={`group relative rounded-2xl overflow-hidden aspect-[4/3] ${isVisible ? 'animate-scale-in' : 'opacity-0'}`}
               style={{ animationDelay: `${(i + 1) * 80}ms` }}
             >
