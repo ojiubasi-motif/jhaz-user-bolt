@@ -13,6 +13,7 @@ import Newsletter from './components/Newsletter';
 import Footer from './components/Footer';
 import Catalog from './pages/Catalog';
 import Order from './pages/Order';
+import Cart from './pages/Cart';
 
 function ScrollToTop() {
   const { pathname, search } = useLocation();
@@ -47,6 +48,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/catalog" element={<Catalog />} />
         <Route path="/order" element={<Order />} />
+        <Route path="/cart" element={<Cart />} />
       </Routes>
       <Footer />
     </div>

@@ -72,8 +72,8 @@ export default function Hero() {
               {/* Main image */}
               <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl">
                 <img
-                  src="https://images.pexels.com/photos/5710258/pexels-photo-5710258.jpeg?auto=compress&cs=tinysrgb&w=800"
-                  alt="African fashion model in Ankara print dress"
+                  src="/images/hero-welcome.jpg"
+                  alt="African fashion model in custom Ankara attire"
                   className="img-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-earth-950/30 via-transparent to-transparent" />
@@ -83,7 +83,7 @@ export default function Hero() {
               <div className="absolute -bottom-6 -left-6 sm:-left-12 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg max-w-[220px] animate-float delay-500">
                 <p className="font-display text-sm font-semibold text-night-950">Custom Ankara Set</p>
                 <p className="text-xs text-earth-500 mt-1">Your print. Your fit.</p>
-                <p className="font-display text-lg font-bold text-terra-600 mt-2">$120</p>
+                <p className="font-display text-lg font-bold text-terra-600 mt-2">₦120,000</p>
               </div>
 
               {/* Floating fabric swatch */}

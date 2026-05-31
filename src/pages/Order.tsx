@@ -5,7 +5,7 @@ import {
   CreditCard, Building2, Phone, Smartphone,
   Lock, ShieldCheck, Pencil, Tag, X,
   CheckCircle2, Package, Mail, Calendar, Copy,
-  Truck, Zap,
+  Truck, Zap, ShoppingBag,
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════
@@ -256,9 +256,8 @@ export default function Order() {
 
   // "Add to Cart" — called from Step 4
   const handleAddToCart = useCallback(() => {
-    const personalization: import('./Order').never extends never
-      ? Personalization
-      : Personalization = orderData.personalization ?? {
+    // @claude-1
+    const personalization: Personalization = orderData.personalization ?? {
       embroideryStyle: 'none',
       necklineType: 'round',
       sleeveLength: 'full',
@@ -997,7 +996,7 @@ function StepDelivery({
   );
 
   // unused import suppressor – ShoppingBag used in Step 4 patch above
-  void ShoppingBag;
+  // void ShoppingBag; //@claude-2
 
   const handleChange = <K extends keyof DeliveryDetails>(field: K, value: DeliveryDetails[K]) => {
     const updated = { ...form, [field]: value };

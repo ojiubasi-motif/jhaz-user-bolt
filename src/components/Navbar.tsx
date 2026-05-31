@@ -100,7 +100,7 @@ export default function Navbar() {
               <Search size={20} />
             </Link>
             <Link
-              to="/order?step=5"
+              to="/cart"
               className="p-2 text-night-800 hover:text-terra-600 transition-colors relative"
               aria-label="Cart"
             >
@@ -143,7 +143,7 @@ export default function Navbar() {
                 <Search size={20} />
               </Link>
               <Link
-                to="/order?step=5"
+                to="/cart"
                 onClick={() => setIsOpen(false)}
                 className="p-2 text-night-800 relative"
                 aria-label="Cart"
