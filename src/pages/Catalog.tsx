@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X, ChevronDown, ChevronUp, Heart, ArrowRight, Package, Palette, Tag } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchProducts, fetchCategories } from '../store/slices/catalogSlice';
 
 interface Product {
   id: string;
@@ -26,46 +27,39 @@ interface Filters {
   category: string[];
   gender: string[];
   occasion: string[];
-  fabric_type: string[];
   search: string;
 }
 
-const FILTER_OPTIONS = {
-  category: ['Agbada', 'Ankara', 'Kaftan', 'Iro & Buba', 'Dashiki', 'Boubou', 'Senator', 'Isiagu'],
-  gender: ['Men', 'Women', 'Kids'],
-  occasion: ['Wedding', 'Casual', 'Corporate'],
-  fabric_type: ['Ankara', 'Kente', 'Adire', 'Batik', 'Aso-Oke', 'Brocade', 'Cotton', 'Wool Blend'],
-} as const;
+type FilterKey = 'category' | 'gender' | 'occasion';
 
-const SECTION_TITLES: Record<keyof typeof FILTER_OPTIONS, string> = {
+const SECTION_TITLES: Record<FilterKey, string> = {
   category: 'Category',
   gender: 'Gender',
   occasion: 'Occasion',
-  fabric_type: 'Fabric Type',
 };
 
 const INITIAL_FILTERS: Filters = {
   category: [],
   gender: [],
   occasion: [],
-  fabric_type: [],
   search: '',
 };
 
 // Maps homepage category names → matching catalog category filter values
 const HOMEPAGE_CATEGORY_MAP: Record<string, string[]> = {
-  'Dresses & Gowns':      ['Ankara', 'Iro & Buba'],
-  'Tops & Blouses':       ['Dashiki', 'Ankara'],
+  'Dresses & Gowns':      ['Ankara Casual', 'Iro & Buba', 'Kente Gown'],
+  'Tops & Blouses':       ['Dashiki', 'Ankara Casual', 'Blazer Top'],
   'Bottoms & Skirts':     ['Iro & Buba'],
   'Jackets & Outerwear':  ['Boubou', 'Agbada'],
-  'Matching Sets':        ['Senator', 'Agbada'],
+  'Matching Sets':        ['Senator', 'Agbada', 'Kaftan'],
   'Accessories':          ['Isiagu'],
 };
 
 export default function Catalog() {
+  const dispatch = useAppDispatch();
+  const { products, categories, loading } = useAppSelector((state) => state.catalog);
+
   const [searchParams, setSearchParams] = useSearchParams();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
   const [homepageCategoryLabel, setHomepageCategoryLabel] = useState<string | null>(null);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
@@ -73,13 +67,13 @@ export default function Catalog() {
     category: true,
     gender: true,
     occasion: true,
-    fabric_type: true,
   });
 
-  // Fetch products on mount
+  // Fetch products and categories on mount
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    dispatch(fetchProducts());
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   // Read ?category= param and apply matching filters whenever search params change
   useEffect(() => {
@@ -94,19 +88,6 @@ export default function Catalog() {
     }
   }, [searchParams]);
 
-  async function fetchProducts() {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('is_featured', { ascending: false });
-
-    if (!error && data) {
-      setProducts(data as Product[]);
-    }
-    setLoading(false);
-  }
-
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       // Search — check first so we can short-circuit early (mirrors apps/user pattern)
@@ -116,7 +97,6 @@ export default function Catalog() {
           p.name.toLowerCase().includes(q) ||
           (p.description || '').toLowerCase().includes(q) ||
           (p.category || '').toLowerCase().includes(q) ||
-          (p.fabric_type || '').toLowerCase().includes(q) ||
           (p.occasion || '').toLowerCase().includes(q);
         if (!matchesSearch) return false;
       }
@@ -134,41 +114,53 @@ export default function Catalog() {
       // Occasion — DB stores lowercase ('wedding', 'casual'), filter stores Title Case ('Wedding')
       if (
         filters.occasion.length > 0 &&
-        !filters.occasion.some((o) => o.toLowerCase() === (p.occasion || '').toLowerCase())
+        !filters.occasion.some((o) => {
+          const lowerOccasion = (p.occasion || '').toLowerCase();
+          return o.toLowerCase() === lowerOccasion || (o === 'Celebrations' && lowerOccasion === 'social-events-celebrations');
+        })
       ) return false;
-
-      // Fabric type — DB stores Title Case ('Ankara', 'Kente') → exact match
-      if (filters.fabric_type.length > 0 && !filters.fabric_type.includes(p.fabric_type || '')) return false;
 
       return true;
     });
   }, [products, filters]);
 
   const activeFilterCount = useMemo(() => {
-    return filters.category.length + filters.gender.length + filters.occasion.length + filters.fabric_type.length;
+    return filters.category.length + filters.gender.length + filters.occasion.length;
   }, [filters]);
+
+  const filterOptions = useMemo(() => {
+    return {
+      category: categories.map((c) => c.name),
+      gender: ['Men', 'Women', 'Kids', 'Unisex'],
+      occasion: ['Wedding', 'Casual', 'Corporate', 'Celebrations', 'Burial'],
+    };
+  }, [categories]);
 
   // Data stats derived from full product list
   const dataStats = useMemo(() => {
     const customizable = products.filter(p => p.is_customizable).length;
-    const categories = new Set(products.map(p => p.category)).size;
-    return { total: products.length, customizable, categories };
+    const categoriesCount = new Set(products.map(p => p.category)).size;
+    return { total: products.length, customizable, categories: categoriesCount };
   }, [products]);
 
-  // Per-option counts — keyed by the display label used in FILTER_OPTIONS.
-  // gender and occasion are stored lowercase in DB ('men', 'wedding') but displayed
-  // Title Case ('Men', 'Wedding'). We build a lowercase→label lookup so counts align.
+  // Per-option counts — keyed by the display label used in filterOptions.
   const optionCounts = useMemo(() => {
-    // Build lowercase → Title Case maps for the fields that differ
-    const genderMap = Object.fromEntries(
-      FILTER_OPTIONS.gender.map((g) => [g.toLowerCase(), g])
-    );
-    const occasionMap = Object.fromEntries(
-      FILTER_OPTIONS.occasion.map((o) => [o.toLowerCase(), o])
-    );
+    const genderMap: Record<string, string> = {
+      'men': 'Men',
+      'women': 'Women',
+      'kids': 'Kids',
+      'unisex': 'Unisex',
+    };
+    const occasionMap: Record<string, string> = {
+      'wedding': 'Wedding',
+      'casual': 'Casual',
+      'corporate': 'Corporate',
+      'social-events-celebrations': 'Celebrations',
+      'burial': 'Burial',
+    };
 
     const counts: Record<string, Record<string, number>> = {
-      category: {}, gender: {}, occasion: {}, fabric_type: {},
+      category: {}, gender: {}, occasion: {},
     };
     products.forEach((p) => {
       // Category — stored Title Case, matches filter labels directly
@@ -184,10 +176,6 @@ export default function Catalog() {
       if (p.occasion) {
         const label = occasionMap[p.occasion.toLowerCase()] ?? p.occasion;
         counts.occasion[label] = (counts.occasion[label] || 0) + 1;
-      }
-      // Fabric type — stored Title Case, matches filter labels directly
-      if (p.fabric_type) {
-        counts.fabric_type[p.fabric_type] = (counts.fabric_type[p.fabric_type] || 0) + 1;
       }
     });
     return counts;
@@ -344,9 +332,6 @@ export default function Catalog() {
               {filters.occasion.map((v) => (
                 <FilterTag key={`occ-${v}`} label={v} onRemove={() => toggleFilter('occasion', v)} />
               ))}
-              {filters.fabric_type.map((v) => (
-                <FilterTag key={`fab-${v}`} label={v} onRemove={() => toggleFilter('fabric_type', v)} />
-              ))}
             </div>
           )}
         </div>
@@ -373,12 +358,12 @@ export default function Catalog() {
               </div>
               {/* Scrollable filter content — no overflow clipping on outer card */}
               <div className="overflow-y-auto max-h-[calc(100vh-16rem)] px-6 py-4">
-                {(['category', 'gender', 'occasion', 'fabric_type'] as const).map((key) => (
+                {(['category', 'gender', 'occasion'] as const).map((key) => (
                   <FilterSectionItem
                     key={key}
                     title={SECTION_TITLES[key]}
                     sectionKey={key}
-                    options={FILTER_OPTIONS[key]}
+                    options={filterOptions[key]}
                     selectedValues={filters[key]}
                     isExpanded={expandedSections[key]}
                     counts={optionCounts[key]}
@@ -389,7 +374,7 @@ export default function Catalog() {
               </div>
             </div>
           </aside>
-
+ 
           {/* Product grid */}
           <main className="flex-1 min-w-0">
             {/* Mobile result count */}
@@ -399,7 +384,7 @@ export default function Catalog() {
                 {' '}piece{filteredProducts.length !== 1 ? 's' : ''}
               </p>
             )}
-
+ 
             {loading ? (
               <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -434,7 +419,7 @@ export default function Catalog() {
           </main>
         </div>
       </div>
-
+ 
       {/* Mobile Filter Drawer */}
       {mobileFiltersOpen && (
         <>
@@ -455,19 +440,19 @@ export default function Catalog() {
             </div>
             {/* Scrollable filter body */}
             <div className="flex-1 overflow-y-auto px-6 py-4">
-              {(['category', 'gender', 'occasion', 'fabric_type'] as const).map((key) => (
-                <FilterSectionItem
-                  key={key}
-                  title={SECTION_TITLES[key]}
-                  sectionKey={key}
-                  options={FILTER_OPTIONS[key]}
-                  selectedValues={filters[key]}
-                  isExpanded={expandedSections[key]}
-                  counts={optionCounts[key]}
-                  onToggleSection={toggleSection}
-                  onToggleFilter={toggleFilter}
-                />
-              ))}
+               {(['category', 'gender', 'occasion'] as const).map((key) => (
+                 <FilterSectionItem
+                   key={key}
+                   title={SECTION_TITLES[key]}
+                   sectionKey={key}
+                   options={filterOptions[key]}
+                   selectedValues={filters[key]}
+                   isExpanded={expandedSections[key]}
+                   counts={optionCounts[key]}
+                   onToggleSection={toggleSection}
+                   onToggleFilter={toggleFilter}
+                 />
+               ))}
             </div>
             {/* Drawer footer — stays fixed at bottom */}
             <div className="shrink-0 px-6 py-4 bg-earth-50/95 backdrop-blur-sm border-t border-earth-200">
@@ -501,13 +486,13 @@ function FilterTag({ label, onRemove }: { label: string; onRemove: () => void })
 // Receives all needed state as props — mirrors apps/user's FilterSection pattern.
 interface FilterSectionItemProps {
   title: string;
-  sectionKey: keyof typeof FILTER_OPTIONS;
-  options: readonly string[];
+  sectionKey: FilterKey;
+  options: string[];
   selectedValues: string[];
   isExpanded: boolean;
   counts: Record<string, number>;
   onToggleSection: (key: string) => void;
-  onToggleFilter: (key: keyof typeof FILTER_OPTIONS, value: string) => void;
+  onToggleFilter: (key: FilterKey, value: string) => void;
 }
 
 function FilterSectionItem({

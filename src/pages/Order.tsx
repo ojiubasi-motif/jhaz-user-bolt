@@ -2,44 +2,46 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Check, ChevronLeft, ChevronRight, Upload, Info,
-  CreditCard, Building2, Phone, Smartphone,
   Lock, ShieldCheck, Pencil, Tag, X,
   CheckCircle2, Package, Mail, Calendar, Copy,
-  Truck, Zap, ShoppingBag,
+  Truck, Zap, ShoppingBag, Loader2,
 } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchProducts, fetchProductByIdOrSlug } from '../store/slices/catalogSlice';
+import { fetchApi } from '../lib/apiClient';
 
 // ═══════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════
 
-type OutfitStyle = 'agbada' | 'ankara' | 'kaftan' | 'aso-oke' | 'babariga' | 'iro-buba' | 'senator';
-type EmbroideryStyle = 'none' | 'minimal' | 'moderate' | 'elaborate';
-type NecklineType = 'round' | 'v-neck' | 'mandarin' | 'open-collar';
-type SleeveLength = 'short' | 'three-quarter' | 'full' | 'cap';
+type OutfitStyle = string;
 type DeliveryMethod = 'standard' | 'express';
 
 interface FabricSelection {
   type: 'preset' | 'custom';
   presetId?: string;
+  presetName?: string;
+  presetColor?: string;
+  presetPrice?: number;
+  presetYardsPerUnit?: number;
+  presetUnit?: string;
   customImageUrl?: string;
   notes?: string;
 }
 
 interface Measurements {
+  id?: string;
   chest: number;
   waist: number;
   hips: number;
   height: number;
   shoulderWidth: number;
   saveForFuture: boolean;
+  fabricQty?: number;
+  fabricUnit?: string;
 }
 
 interface Personalization {
-  embroideryStyle: EmbroideryStyle;
-  necklineType: NecklineType;
-  sleeveLength: SleeveLength;
-  addLining: boolean;
-  accessories: string[];
   specialRequests: string;
 }
 
@@ -55,7 +57,16 @@ interface DeliveryDetails {
 }
 
 interface OrderData {
+  productId?: string;
+  productName?: string;
   style: OutfitStyle | null;
+  customStyleInfo?: {
+    id: string;
+    name: string;
+    description: string;
+    basePrice: number;
+    image: string;
+  } | null;
   fabric: FabricSelection | null;
   measurements: Measurements | null;
   personalization: Personalization | null;
@@ -69,14 +80,13 @@ interface OrderData {
 
 const STEPS = [
   { id: 1, name: 'Style' },
-  { id: 2, name: 'Fabric' },
-  { id: 3, name: 'Measurements' },
+  { id: 2, name: 'Measurements' },
+  { id: 3, name: 'Fabric' },
   { id: 4, name: 'Personalize' },
   { id: 5, name: 'Cart' },
   { id: 6, name: 'Delivery' },
   { id: 7, name: 'Summary' },
-  { id: 8, name: 'Payment' },
-  { id: 9, name: 'Done' },
+  { id: 8, name: 'Order Details' },
 ];
 
 const OUTFIT_STYLES = [
@@ -102,39 +112,7 @@ const FABRIC_PRESETS = [
 
 const DELIVERY_PRICES = { standard: 3500, express: 7500 } as const;
 
-const CUSTOMIZATION_PRICES = {
-  embroidery: { none: 0, minimal: 5000, moderate: 12000, elaborate: 25000 },
-  lining: 8000,
-  accessories: 3000,
-} as const;
 
-const EMBROIDERY_OPTIONS: { value: EmbroideryStyle; label: string; description: string }[] = [
-  { value: 'none', label: 'None', description: 'Clean, simple finish' },
-  { value: 'minimal', label: 'Minimal', description: 'Subtle collar & cuff accents' },
-  { value: 'moderate', label: 'Moderate', description: 'Elegant front-panel patterns' },
-  { value: 'elaborate', label: 'Elaborate', description: 'Full intricate embroidery' },
-];
-
-const NECKLINE_OPTIONS: { value: NecklineType; label: string }[] = [
-  { value: 'round', label: 'Round Neck' },
-  { value: 'v-neck', label: 'V-Neck' },
-  { value: 'mandarin', label: 'Mandarin Collar' },
-  { value: 'open-collar', label: 'Open Collar' },
-];
-
-const SLEEVE_OPTIONS: { value: SleeveLength; label: string }[] = [
-  { value: 'short', label: 'Short Sleeve' },
-  { value: 'three-quarter', label: '¾ Sleeve' },
-  { value: 'full', label: 'Full Length' },
-  { value: 'cap', label: 'Cap Sleeve' },
-];
-
-const ACCESSORY_OPTIONS = [
-  { id: 'cap', label: 'Matching Cap / Fila' },
-  { id: 'shoes', label: 'Matching Shoes' },
-  { id: 'bag', label: 'Matching Bag' },
-  { id: 'jewelry', label: 'Jewellery Set' },
-];
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -185,15 +163,14 @@ function saveCart(items: CartItem[]) {
 }
 
 function calculateOrderTotal(order: OrderData) {
-  const style = OUTFIT_STYLES.find((s) => s.id === order.style);
-  const basePrice = style?.basePrice || 0;
-  const fabric = FABRIC_PRESETS.find((f) => f.id === order.fabric?.presetId);
-  let customizationFee = fabric?.price || 0;
-  if (order.personalization) {
-    customizationFee += CUSTOMIZATION_PRICES.embroidery[order.personalization.embroideryStyle];
-    if (order.personalization.addLining) customizationFee += CUSTOMIZATION_PRICES.lining;
-    customizationFee += order.personalization.accessories.length * CUSTOMIZATION_PRICES.accessories;
-  }
+  const basePrice = order.customStyleInfo?.basePrice || OUTFIT_STYLES.find((s) => s.id === order.style)?.basePrice || 0;
+  const fabricQty = order.measurements?.fabricQty || 2.0;
+  const yardsPerUnit = order.fabric?.presetYardsPerUnit || 1.0;
+  const unitsNeeded = Math.ceil(fabricQty / yardsPerUnit);
+  const fabricPrice = order.fabric?.type === 'preset'
+    ? (order.fabric.presetPrice ?? 0)
+    : 0;
+  const customizationFee = fabricPrice * unitsNeeded;
   const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
   const subtotal = basePrice + customizationFee + deliveryFee;
   const discount = order.promoCode === 'JHAZ10' ? subtotal * 0.1 : 0;
@@ -217,11 +194,79 @@ function formatDate(date: Date): string {
 export default function Order() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const dispatch = useAppDispatch();
+  const productId = searchParams.get('product');
+  const { products, activeProduct } = useAppSelector((state) => state.catalog);
+
+  // Fetch products on mount if not loaded
+  useEffect(() => {
+    if (products.length === 0) {
+      dispatch(fetchProducts());
+    }
+  }, [dispatch, products.length]);
+
+  // Fetch specific product by ID/slug when productId changes
+  useEffect(() => {
+    if (productId) {
+      dispatch(fetchProductByIdOrSlug(productId));
+    }
+  }, [dispatch, productId]);
+
+  // Find the selected product (populated with fabrics)
+  const currentProduct = activeProduct;
+
+  // Derive fabrics from currentProduct.fabrics if present, fallback to static FABRIC_PRESETS
+  const fabricOptions = useMemo(() => {
+    if (!currentProduct || !currentProduct.fabrics || currentProduct.fabrics.length === 0) {
+      return FABRIC_PRESETS.map((p) => ({
+        id: p.id,
+        name: p.name,
+        color: p.color,
+        price: p.price,
+        imageUrl: undefined as string | undefined,
+        yardsPerUnit: 1.0,
+        unit: 'yard',
+      }));
+    }
+
+    const list: Array<{ id: string; name: string; color: string; price: number; imageUrl?: string; yardsPerUnit: number; unit: string }> = [];
+    for (const f of currentProduct.fabrics) {
+      if (f.properties) {
+        for (const prop of f.properties) {
+          if (!prop.isActive || !prop.inStock) continue;
+          list.push({
+            id: `${f.id}::${prop.colorName}`,
+            name: `${f.name} — ${prop.colorName}`,
+            color: prop.colorCode || '#eee',
+            price: prop.priceModifier || 0,
+            imageUrl: prop.imageUrl,
+            yardsPerUnit: prop.yardsPerUnit || 1.0,
+            unit: prop.unit || 'yard',
+          });
+        }
+      }
+    }
+    return list;
+  }, [currentProduct]);
+
+  // Derive styles from currentProduct.styleOptions if present, fallback to static OUTFIT_STYLES
+  const outfitStyles = useMemo(() => {
+    if (!currentProduct || !currentProduct.styleOptions || currentProduct.styleOptions.length === 0) {
+      return OUTFIT_STYLES;
+    }
+    return currentProduct.styleOptions.map((style) => ({
+      id: style.name,
+      name: style.name,
+      description: style.description || 'Custom tailored style option',
+      basePrice: currentProduct.price + style.priceModifier,
+      image: style.imgUrl || currentProduct.image_url || 'https://images.pexels.com/photos/7679865/pexels-photo-7679865.jpeg?auto=compress&cs=tinysrgb&w=400',
+    }));
+  }, [currentProduct]);
 
   // Derive step from URL — default to 1
   const currentStep = useMemo(() => {
     const s = parseInt(searchParams.get('step') || '1', 10);
-    return isNaN(s) || s < 1 || s > 9 ? 1 : s;
+    return isNaN(s) || s < 1 || s > 8 ? 1 : s;
   }, [searchParams]);
 
   const goToStep = useCallback((step: number) => {
@@ -232,7 +277,40 @@ export default function Order() {
   const handleNext = useCallback(() => goToStep(currentStep + 1), [currentStep, goToStep]);
   const handleBack = useCallback(() => goToStep(currentStep - 1), [currentStep, goToStep]);
 
+  const { user } = useAppSelector((state) => state.auth);
   const [paymentReference, setPaymentReference] = useState('');
+  const [confirmedOrderInfo, setConfirmedOrderInfo] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [createdOrders, setCreatedOrders] = useState<any[]>([]);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Load Paystack script dynamically
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://js.paystack.co/v1/inline.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
   const [orderData, setOrderData] = useState<OrderData>({
     style: null,
     fabric: null,
@@ -241,6 +319,41 @@ export default function Order() {
     delivery: null,
     promoCode: '',
   });
+
+  // Initialize and update productId and productName in orderData when URL/product changes
+  useEffect(() => {
+    if (productId) {
+      setOrderData((prev) => ({ ...prev, productId }));
+    }
+  }, [productId]);
+
+  useEffect(() => {
+    if (currentProduct) {
+      setOrderData((prev) => {
+        if (prev.productName === currentProduct.name && prev.productId === currentProduct.id) return prev;
+        return {
+          ...prev,
+          productId: currentProduct.id,
+          productName: currentProduct.name,
+        };
+      });
+    }
+  }, [currentProduct]);
+
+  // Auto-select default style when currentProduct is loaded and orderData.style is null
+  useEffect(() => {
+    if (currentProduct && !orderData.style && outfitStyles.length > 0) {
+      const defaultStyleName = currentProduct.defaultStyle || currentProduct.styleOptions?.[0]?.name;
+      if (defaultStyleName) {
+        const styleObj = outfitStyles.find((style) => style.id === defaultStyleName) || outfitStyles[0];
+        setOrderData((prev) => ({
+          ...prev,
+          style: styleObj.id,
+          customStyleInfo: styleObj,
+        }));
+      }
+    }
+  }, [currentProduct, orderData.style, outfitStyles]);
 
   // Multi-item cart
   const [cartItems, setCartItems] = useState<CartItem[]>(loadCart);
@@ -256,13 +369,7 @@ export default function Order() {
 
   // "Add to Cart" — called from Step 4
   const handleAddToCart = useCallback(() => {
-    // @claude-1
     const personalization: Personalization = orderData.personalization ?? {
-      embroideryStyle: 'none',
-      necklineType: 'round',
-      sleeveLength: 'full',
-      addLining: false,
-      accessories: [],
       specialRequests: '',
     };
     const item: CartItem = {
@@ -271,7 +378,16 @@ export default function Order() {
     };
     setCartItems((prev) => [...prev, item]);
     // Reset wizard for potential next item
-    setOrderData({ style: null, fabric: null, measurements: null, personalization: null, delivery: null, promoCode: '' });
+    setOrderData({
+      productId: orderData.productId,
+      productName: orderData.productName,
+      style: null,
+      fabric: null,
+      measurements: null,
+      personalization: null,
+      delivery: null,
+      promoCode: '',
+    });
     goToStep(5);
   }, [orderData, goToStep]);
 
@@ -279,12 +395,239 @@ export default function Order() {
     setCartItems((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  const handlePaymentComplete = useCallback((ref: string) => {
+  const handleEditCartItem = useCallback((item: CartItem) => {
+    setOrderData(item.order);
+    setCartItems((prev) => prev.filter((c) => c.id !== item.id));
+    goToStep(1);
+  }, [goToStep]);
+
+  // Load item for editing if edit param is present in URL
+  const editItemId = searchParams.get('edit');
+  useEffect(() => {
+    if (editItemId && cartItems.length > 0) {
+      const itemToEdit = cartItems.find((item) => item.id === editItemId);
+      if (itemToEdit) {
+        setOrderData(itemToEdit.order);
+        setCartItems((prev) => prev.filter((item) => item.id !== editItemId));
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('edit');
+          return next;
+        });
+      }
+    }
+  }, [editItemId, cartItems, setSearchParams]);
+
+  const handlePaymentComplete = useCallback((ref: string, orderDetails?: { orderId?: string; totalAmount?: number }) => {
+    // Capture order details before clearing cart
+    const itemsCount = cartItems.length;
+    const itemsSubtotal = cartItems.reduce((sum, item) => {
+      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+      return sum + basePrice + customizationFee;
+    }, 0);
+    const deliveryFee = orderData.delivery ? DELIVERY_PRICES[orderData.delivery.deliveryMethod] : 0;
+    const totalPaid = orderDetails?.totalAmount || (itemsSubtotal + deliveryFee);
+    const orderId = orderDetails?.orderId || `JHZ-${Date.now().toString(36).toUpperCase()}`;
+    const styleObj = OUTFIT_STYLES.find((s) => s.id === cartItems[0]?.order?.style || orderData.style);
+    
+    setConfirmedOrderInfo({
+      orderId,
+      paymentReference: ref,
+      totalPaid,
+      itemCount: itemsCount,
+      deliveryMethod: orderData.delivery?.deliveryMethod || 'standard',
+      deliveryAddress: orderData.delivery ? `${orderData.delivery.city}, ${orderData.delivery.state}` : 'N/A',
+      styleName: styleObj ? styleObj.name : 'Outfit',
+      estimatedDelivery: orderData.delivery?.deliveryMethod === 'express'
+        ? addDays(new Date(), 10)
+        : addDays(new Date(), 21),
+    });
+
     setPaymentReference(ref);
     // Clear cart on successful payment
     setCartItems([]);
-    goToStep(9);
-  }, [goToStep]);
+    goToStep(8);
+  }, [goToStep, cartItems, orderData]);
+
+  const payOrder = async (orderInfo: any) => {
+    const PaystackPop = (window as any).PaystackPop;
+    if (!PaystackPop) {
+      throw new Error("Paystack library not loaded. Please wait a moment and try again.");
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      const handler = PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || "pk_test_b2798c2707fdae38dc44c692030b3139d97a049b",
+        email: user?.email,
+        amount: orderInfo.totalAmount * 100, // in kobo
+        ref: orderInfo.reference,
+        access_code: orderInfo.paystackAccessCode,
+        onClose: () => {
+          reject(new Error("Payment cancelled."));
+        },
+        callback: function(response: any) {
+          (async () => {
+            try {
+              await fetchApi(`/orders/verify/${response.reference}`, {
+                method: "POST",
+              });
+              resolve();
+            } catch (err: any) {
+              reject(new Error(`Verification failed: ${err.message || err}`));
+            }
+          })();
+        }
+      });
+      handler.openIframe();
+    });
+  };
+
+  const handlePay = async () => {
+    if (!user) {
+      setPaymentError("You must be logged in to proceed.");
+      navigate(`/login?redirect=${encodeURIComponent('/order?step=7')}`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      let activeOrder = createdOrders[0] || null;
+      if (!activeOrder) {
+        const payloadItems = cartItems.map((item) => {
+          const presetId = item.order.fabric?.presetId;
+          const fabricId = presetId && /^[a-f\d]{24}/i.test(presetId)
+            ? presetId
+            : undefined;
+
+          return {
+            productId: item.order.productId,
+            measurement: {
+              chest: item.order.measurements?.chest,
+              waist: item.order.measurements?.waist,
+              hip: item.order.measurements?.hips,
+              shoulder: item.order.measurements?.shoulderWidth,
+              length: item.order.measurements?.height,
+              notes: item.order.personalization?.specialRequests || undefined,
+            },
+            fabricId,
+            styleOptionName: item.order.customStyleInfo?.name || 'Standard',
+            notes: item.order.personalization?.specialRequests || undefined,
+          };
+        });
+
+        // Compute frontend expected total for backend verification
+        const frontendItemsSubtotal = cartItems.reduce((sum, item) => {
+          const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+          return sum + basePrice + customizationFee;
+        }, 0);
+        const frontendDeliveryFee = orderData.delivery ? DELIVERY_PRICES[orderData.delivery.deliveryMethod] : 0;
+        const frontendDiscount = orderData.promoCode === 'JHAZ10' ? (frontendItemsSubtotal + frontendDeliveryFee) * 0.1 : 0;
+        const expectedTotal = frontendItemsSubtotal + frontendDeliveryFee - frontendDiscount;
+
+        const res = await fetchApi('/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            items: payloadItems,
+            promoCode: orderData.promoCode || undefined,
+            expectedTotal,
+            delivery: orderData.delivery ? {
+              fullName: orderData.delivery.fullName,
+              phoneNumber: orderData.delivery.phoneNumber,
+              address: orderData.delivery.address,
+              city: orderData.delivery.city,
+              state: orderData.delivery.state,
+              country: orderData.delivery.country,
+              deliveryMethod: orderData.delivery.deliveryMethod,
+            } : undefined,
+          }),
+        });
+        setCreatedOrders([res]);
+        activeOrder = res;
+      }
+
+      // Perform single payment
+      await payOrder(activeOrder);
+
+      // Payment completed successfully!
+      setIsProcessing(false);
+      handlePaymentComplete(activeOrder.reference, { orderId: activeOrder.orderId, totalAmount: activeOrder.totalAmount });
+    } catch (err: any) {
+      console.error(err);
+      setPaymentError(err.message || "An unexpected error occurred during payment.");
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayLater = async () => {
+    if (!user) {
+      setPaymentError("You must be logged in to proceed.");
+      navigate(`/login?redirect=${encodeURIComponent('/order?step=7')}`);
+      return;
+    }
+
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    try {
+      const payloadItems = cartItems.map((item) => {
+        const presetId = item.order.fabric?.presetId;
+        const fabricId = presetId && /^[a-f\d]{24}/i.test(presetId)
+          ? presetId
+          : undefined;
+
+        return {
+          productId: item.order.productId,
+          measurement: {
+            chest: item.order.measurements?.chest,
+            waist: item.order.measurements?.waist,
+            hip: item.order.measurements?.hips,
+            shoulder: item.order.measurements?.shoulderWidth,
+            length: item.order.measurements?.height,
+            notes: item.order.personalization?.specialRequests || undefined,
+          },
+          fabricId,
+          styleOptionName: item.order.customStyleInfo?.name || 'Standard',
+          notes: item.order.personalization?.specialRequests || undefined,
+        };
+      });
+
+      // Compute frontend expected total for backend verification
+      const frontendItemsSubtotal = cartItems.reduce((sum, item) => {
+        const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+        return sum + basePrice + customizationFee;
+      }, 0);
+      const frontendDeliveryFee = orderData.delivery ? DELIVERY_PRICES[orderData.delivery.deliveryMethod] : 0;
+      const frontendDiscount = orderData.promoCode === 'JHAZ10' ? (frontendItemsSubtotal + frontendDeliveryFee) * 0.1 : 0;
+      const expectedTotal = frontendItemsSubtotal + frontendDeliveryFee - frontendDiscount;
+
+      const res = await fetchApi('/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          items: payloadItems,
+          promoCode: orderData.promoCode || undefined,
+          expectedTotal,
+          delivery: orderData.delivery ? {
+            fullName: orderData.delivery.fullName,
+            phoneNumber: orderData.delivery.phoneNumber,
+            address: orderData.delivery.address,
+            city: orderData.delivery.city,
+            state: orderData.delivery.state,
+            country: orderData.delivery.country,
+            deliveryMethod: orderData.delivery.deliveryMethod,
+          } : undefined,
+        }),
+      });
+      
+      setIsProcessing(false);
+      handlePaymentComplete(`OFFLINE_${res.reference || Date.now()}`, { orderId: res.orderId, totalAmount: res.totalAmount });
+    } catch (err: any) {
+      console.error(err);
+      setPaymentError(err.message || "An unexpected error occurred while placing offline order.");
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20">
@@ -311,24 +654,35 @@ export default function Order() {
           {currentStep === 1 && (
             <StepStyleSelection
               selected={orderData.style}
-              onSelect={(s) => updateOrderData('style', s)}
+              outfitStyles={outfitStyles}
+              onSelect={(s) => {
+                const styleObj = outfitStyles.find((style) => style.id === s);
+                setOrderData((prev) => ({
+                  ...prev,
+                  style: s,
+                  customStyleInfo: styleObj,
+                }));
+              }}
               onNext={handleNext}
             />
           )}
           {currentStep === 2 && (
-            <StepFabricSelection
-              fabric={orderData.fabric}
-              onSelect={(f) => updateOrderData('fabric', f)}
+            <StepMeasurements
+              measurements={orderData.measurements}
+              productId={productId || undefined}
+              onUpdate={(m) => updateOrderData('measurements', m)}
               onNext={handleNext}
               onBack={handleBack}
             />
           )}
           {currentStep === 3 && (
-            <StepMeasurements
-              measurements={orderData.measurements}
-              onUpdate={(m) => updateOrderData('measurements', m)}
+            <StepFabricSelection
+              fabric={orderData.fabric}
+              fabricOptions={fabricOptions}
+              onSelect={(f) => updateOrderData('fabric', f)}
               onNext={handleNext}
               onBack={handleBack}
+              fabricQty={orderData.measurements?.fabricQty || 2.0}
             />
           )}
           {currentStep === 4 && (
@@ -343,6 +697,7 @@ export default function Order() {
             <StepCart
               cartItems={cartItems}
               onRemove={handleRemoveFromCart}
+              onEdit={handleEditCartItem}
               onAddAnother={() => navigate('/catalog')}
               onCheckout={() => goToStep(6)}
             />
@@ -360,24 +715,22 @@ export default function Order() {
               order={orderData}
               cartItems={cartItems}
               onEditStep={goToStep}
+              onEditItem={handleEditCartItem}
               onApplyPromo={(code) => updateOrderData('promoCode', code)}
-              onNext={handleNext}
+              onNext={isOnline ? handlePay : handlePayLater}
               onBack={handleBack}
+              isProcessing={isProcessing}
+              paymentError={paymentError}
+              isOnline={isOnline}
+              createdOrders={createdOrders}
             />
           )}
           {currentStep === 8 && (
-            <StepPayment
-              order={orderData}
-              cartItems={cartItems}
-              onComplete={handlePaymentComplete}
-              onBack={handleBack}
-            />
-          )}
-          {currentStep === 9 && (
             <StepConfirmation
               order={orderData}
               cartItems={cartItems}
               paymentReference={paymentReference}
+              confirmedOrderInfo={confirmedOrderInfo}
             />
           )}
         </div>
@@ -487,11 +840,13 @@ function StepNav({
 
 function StepStyleSelection({
   selected,
+  outfitStyles,
   onSelect,
   onNext,
 }: {
-  selected: OutfitStyle | null;
-  onSelect: (s: OutfitStyle) => void;
+  selected: string | null;
+  outfitStyles: readonly any[];
+  onSelect: (s: string) => void;
   onNext: () => void;
 }) {
   return (
@@ -502,10 +857,10 @@ function StepStyleSelection({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {OUTFIT_STYLES.map((style) => (
+        {outfitStyles.map((style) => (
           <button
             key={style.id}
-            onClick={() => onSelect(style.id as OutfitStyle)}
+            onClick={() => onSelect(style.id)}
             className={`group relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${
               selected === style.id
                 ? 'border-kente-500 ring-2 ring-kente-500/30'
@@ -530,7 +885,7 @@ function StepStyleSelection({
         ))}
       </div>
 
-      <StepNav onNext={onNext} nextDisabled={!selected} nextLabel="Continue to Fabric" showBack={false} />
+      <StepNav onNext={onNext} nextDisabled={!selected} nextLabel="Continue to Measurements" showBack={false} />
     </div>
   );
 }
@@ -541,21 +896,39 @@ function StepStyleSelection({
 
 function StepFabricSelection({
   fabric,
+  fabricOptions,
   onSelect,
   onNext,
   onBack,
+  fabricQty,
 }: {
   fabric: FabricSelection | null;
+  fabricOptions: Array<{ id: string; name: string; color: string; price: number; imageUrl?: string; yardsPerUnit: number; unit: string }>;
   onSelect: (f: FabricSelection) => void;
   onNext: () => void;
   onBack: () => void;
+  fabricQty: number;
 }) {
   const [notes, setNotes] = useState(fabric?.notes || '');
   const [customImage, setCustomImage] = useState<string | null>(
     fabric?.type === 'custom' ? fabric.customImageUrl || null : null,
   );
 
-  const handlePreset = (id: string) => onSelect({ type: 'preset', presetId: id, notes });
+  const handlePreset = (id: string) => {
+    const opt = fabricOptions.find(o => o.id === id);
+    if (opt) {
+      onSelect({
+        type: 'preset',
+        presetId: id,
+        presetName: opt.name,
+        presetColor: opt.color,
+        presetPrice: opt.price,
+        presetYardsPerUnit: opt.yardsPerUnit,
+        presetUnit: opt.unit,
+        notes
+      });
+    }
+  };
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -580,29 +953,47 @@ function StepFabricSelection({
       <div>
         <h3 className="font-display text-base font-semibold text-night-950 mb-3">Premium Fabric Swatches</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {FABRIC_PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => handlePreset(p.id)}
-              className={`relative p-3 rounded-xl border-2 text-left transition-all ${
-                fabric?.type === 'preset' && fabric.presetId === p.id
-                  ? 'border-kente-500 ring-2 ring-kente-500/30'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <div
-                className="h-14 w-full rounded-lg mb-2 border border-earth-200"
-                style={{ backgroundColor: p.color }}
-              />
-              <p className="text-xs font-semibold text-night-950 truncate">{p.name}</p>
-              <p className="text-[10px] text-earth-500">{p.price === 0 ? 'Included' : `+${formatNaira(p.price)}`}</p>
-              {fabric?.type === 'preset' && fabric.presetId === p.id && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-kente-500 flex items-center justify-center">
-                  <Check size={12} className="text-white" />
-                </div>
-              )}
-            </button>
-          ))}
+          {fabricOptions.map((p) => {
+            const unitsNeeded = Math.ceil(fabricQty / p.yardsPerUnit);
+            const totalFabricCost = p.price * unitsNeeded;
+            
+            return (
+              <button
+                key={p.id}
+                onClick={() => handlePreset(p.id)}
+                className={`relative p-3 rounded-xl border-2 text-left transition-all ${
+                  fabric?.type === 'preset' && fabric.presetId === p.id
+                    ? 'border-kente-500 ring-2 ring-kente-500/30'
+                    : 'border-earth-200 hover:border-terra-400'
+                }`}
+              >
+                <div
+                  className="h-14 w-full rounded-lg mb-2 border border-earth-200 bg-cover bg-center"
+                  style={{
+                    backgroundColor: p.color,
+                    backgroundImage: p.imageUrl ? `url(${p.imageUrl})` : 'none'
+                  }}
+                />
+                <p className="text-xs font-semibold text-night-950 truncate" title={p.name}>{p.name}</p>
+                <p className="text-[10px] text-earth-500">
+                  {p.price === 0 
+                    ? 'Included' 
+                    : `+${formatNaira(totalFabricCost)} (${unitsNeeded} ${p.unit}${unitsNeeded > 1 ? 's' : ''})`
+                  }
+                </p>
+                {p.price > 0 && (
+                  <p className="text-[8px] text-earth-400 mt-0.5">
+                    {p.yardsPerUnit} yd per {p.unit}
+                  </p>
+                )}
+                {fabric?.type === 'preset' && fabric.presetId === p.id && (
+                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-kente-500 flex items-center justify-center">
+                    <Check size={12} className="text-white" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -647,7 +1038,7 @@ function StepFabricSelection({
         />
       </div>
 
-      <StepNav onBack={onBack} onNext={onNext} nextDisabled={!fabric} nextLabel="Continue to Measurements" />
+      <StepNav onBack={onBack} onNext={onNext} nextDisabled={!fabric} nextLabel="Continue to Personalize" />
     </div>
   );
 }
@@ -658,29 +1049,274 @@ function StepFabricSelection({
 
 function StepMeasurements({
   measurements,
+  productId,
   onUpdate,
   onNext,
   onBack,
 }: {
   measurements: Measurements | null;
+  productId?: string;
   onUpdate: (m: Measurements) => void;
   onNext: () => void;
   onBack: () => void;
 }) {
+  const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
+
+  const hasExistingFormValues = measurements && (measurements.chest > 0 || measurements.waist > 0 || measurements.hips > 0);
   const [form, setForm] = useState<Measurements>(
-    measurements || { chest: 0, waist: 0, hips: 0, height: 0, shoulderWidth: 0, saveForFuture: false },
+    measurements || { chest: 0, waist: 0, hips: 0, height: 0, shoulderWidth: 0, saveForFuture: false, fabricQty: 2.0, fabricUnit: 'yards' },
   );
+
+  const [savedProfiles, setSavedProfiles] = useState<any[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(true);
+  const [newProfileName, setNewProfileName] = useState('My Custom Fit');
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [formula, setFormula] = useState<any>(null);
+
   const [showGuide, setShowGuide] = useState<string | null>(null);
+
+  const calculateYards = useCallback((m: any, formulaConfig: any) => {
+    if (!formulaConfig || !m.chest || !m.hips || !m.height || !m.shoulderWidth) {
+      return 2.0;
+    }
+    const { ease, fabricWidth, garmentLengthMultiplier, sleeveLengthMultiplier, allowance, divisor, minYards } = formulaConfig;
+    const maxCirc = Math.max(m.chest, m.hips);
+    const flatWidth = (maxCirc / 2) + ease;
+    const numLengths = (flatWidth * 2 > fabricWidth) ? 2 : 1;
+    const garmentLength = m.height * garmentLengthMultiplier;
+    const sleeveLength = m.shoulderWidth * sleeveLengthMultiplier;
+    const totalLengthCm = (garmentLength * numLengths) + sleeveLength + allowance;
+    const yards = totalLengthCm / divisor;
+    return Math.max(minYards, Math.round(yards * 100) / 100);
+  }, []);
+
+  // Load profiles and formula config
+  useEffect(() => {
+    let active = true;
+    const loadData = async () => {
+      try {
+        setLoadingProfiles(true);
+        const formulaData = await fetchApi('/orders/fabric-formula');
+        if (!active) return;
+        setFormula(formulaData);
+
+        if (user) {
+          const data = await fetchApi('/orders/measurements');
+          if (!active) return;
+          const list = data || [];
+          setSavedProfiles(list);
+
+          if (list.length > 0 && !hasExistingFormValues) {
+            const defaultProf = list.find((m: any) => m.isDefault) || list[0];
+            setSelectedProfileId(defaultProf.id);
+            const mapped = {
+              id: defaultProf.id,
+              chest: defaultProf.chest || 0,
+              waist: defaultProf.waist || 0,
+              hips: defaultProf.hip || 0,
+              height: defaultProf.length || 0,
+              shoulderWidth: defaultProf.shoulder || 0,
+              saveForFuture: false,
+              fabricQty: 2.0,
+              fabricUnit: 'yards',
+            };
+            mapped.fabricQty = calculateYards(mapped, formulaData);
+            setForm(mapped);
+            onUpdate(mapped);
+            setIsCreatingNew(false);
+          } else if (list.length === 0) {
+            setIsCreatingNew(true);
+          }
+        }
+      } catch (err: any) {
+        console.error(err);
+      } finally {
+        if (active) setLoadingProfiles(false);
+      }
+    };
+
+    loadData();
+    return () => {
+      active = false;
+    };
+  }, [user, hasExistingFormValues, calculateYards]);
+
+  const handleProfileChange = (profileId: string) => {
+    setSelectedProfileId(profileId);
+    const prof = savedProfiles.find((p) => p.id === profileId);
+    if (prof) {
+      const mapped = {
+        id: prof.id,
+        chest: prof.chest || 0,
+        waist: prof.waist || 0,
+        hips: prof.hip || 0,
+        height: prof.length || 0,
+        shoulderWidth: prof.shoulder || 0,
+        saveForFuture: false,
+        fabricQty: 2.0,
+        fabricUnit: 'yards',
+      };
+      if (formula) {
+        mapped.fabricQty = calculateYards(mapped, formula);
+      }
+      setForm(mapped);
+      onUpdate(mapped);
+    }
+  };
+
+  const handleStartCreateNew = () => {
+    setIsCreatingNew(true);
+    setSelectedProfileId(null);
+    const cleared = {
+      chest: 0,
+      waist: 0,
+      hips: 0,
+      height: 0,
+      shoulderWidth: 0,
+      saveForFuture: true,
+      fabricQty: 2.0,
+      fabricUnit: 'yards',
+    };
+    setForm(cleared);
+    onUpdate(cleared);
+  };
+
+  const handleCancelCreateNew = () => {
+    setIsCreatingNew(false);
+    if (savedProfiles.length > 0) {
+      const defaultProf = savedProfiles.find((m: any) => m.isDefault) || savedProfiles[0];
+      handleProfileChange(defaultProf.id);
+    }
+  };
+
+  const handleContinue = async () => {
+    if (!isValid) return;
+
+    if (user && isCreatingNew) {
+      if (form.saveForFuture) {
+        try {
+          setIsSaving(true);
+          setApiError(null);
+          const res = await fetchApi('/orders/measurements', {
+            method: 'POST',
+            body: JSON.stringify({
+              profileName: newProfileName || 'My Custom Fit',
+              isDefault: savedProfiles.length === 0, // Set default if it's their first profile
+              chest: form.chest,
+              waist: form.waist,
+              hip: form.hips,
+              shoulder: form.shoulderWidth,
+              length: form.height,
+              notes: 'Saved from order customization wizard',
+            }),
+          });
+
+          const mapped = {
+            id: res.id,
+            chest: form.chest,
+            waist: form.waist,
+            hips: form.hips,
+            height: form.height,
+            shoulderWidth: form.shoulderWidth,
+            saveForFuture: form.saveForFuture,
+            fabricQty: form.fabricQty,
+            fabricUnit: form.fabricUnit,
+          };
+          setForm(mapped);
+          onUpdate(mapped);
+          onNext();
+        } catch (err: any) {
+          setApiError(err.message || 'Failed to save measurement profile.');
+        } finally {
+          setIsSaving(false);
+        }
+      } else {
+        const mapped = {
+          chest: form.chest,
+          waist: form.waist,
+          hips: form.hips,
+          height: form.height,
+          shoulderWidth: form.shoulderWidth,
+          saveForFuture: false,
+          fabricQty: form.fabricQty,
+          fabricUnit: form.fabricUnit,
+        };
+        setForm(mapped);
+        onUpdate(mapped);
+        onNext();
+      }
+    } else {
+      if (user && selectedProfileId) {
+        const original = savedProfiles.find(p => p.id === selectedProfileId);
+        const changed = original && (
+          original.chest !== form.chest ||
+          original.waist !== form.waist ||
+          original.hip !== form.hips ||
+          original.length !== form.height ||
+          original.shoulder !== form.shoulderWidth
+        );
+        
+        if (changed) {
+          try {
+            setIsSaving(true);
+            setApiError(null);
+            await fetchApi(`/orders/measurements/${selectedProfileId}`, {
+              method: 'PUT',
+              body: JSON.stringify({
+                profileName: original.profileName,
+                isDefault: original.isDefault,
+                chest: form.chest,
+                waist: form.waist,
+                hip: form.hips,
+                shoulder: form.shoulderWidth,
+                length: form.height,
+                notes: original.notes,
+              }),
+            });
+          } catch (err: any) {
+            setApiError(err.message || 'Failed to update measurement profile.');
+            setIsSaving(false);
+            return;
+          } finally {
+            setIsSaving(false);
+          }
+        }
+
+        const mapped = {
+          id: selectedProfileId,
+          chest: form.chest,
+          waist: form.waist,
+          hips: form.hips,
+          height: form.height,
+          shoulderWidth: form.shoulderWidth,
+          saveForFuture: false,
+          fabricQty: form.fabricQty,
+          fabricUnit: form.fabricUnit,
+        };
+        onUpdate(mapped);
+      }
+      onNext();
+    }
+  };
 
   const handleChange = (field: keyof Measurements, value: number | boolean) => {
     const updated = { ...form, [field]: value };
+    if (formula) {
+      const yards = calculateYards(updated, formula);
+      updated.fabricQty = yards;
+      updated.fabricUnit = 'yards';
+    }
     setForm(updated);
     onUpdate(updated);
   };
 
   const isValid = form.chest > 0 && form.waist > 0 && form.hips > 0 && form.height > 0 && form.shoulderWidth > 0;
 
-  const fields: { key: string; label: string }[] = [
+  const fields: { key: keyof Omit<Measurements, 'saveForFuture'>; label: string }[] = [
     { key: 'chest', label: 'Chest' },
     { key: 'waist', label: 'Waist' },
     { key: 'hips', label: 'Hips' },
@@ -695,6 +1331,106 @@ function StepMeasurements({
         <p className="mt-1 text-earth-500 text-sm">Enter body measurements in centimetres for a perfect fit.</p>
       </div>
 
+      {/* Guest user login prompt */}
+      {!user && (
+        <div className="bg-terra-50 border border-terra-100 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 animate-fade-in">
+          <div className="flex items-start gap-3">
+            <Info size={18} className="text-terra-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-night-950">Already have a measurement profile?</p>
+              <p className="text-xs text-earth-600 mt-0.5">
+                Log in to retrieve your saved measurements and bypass manual entry.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              navigate(`/login?redirect=${encodeURIComponent(`/order?product=${productId || ''}&step=2`)}`);
+            }}
+            className="px-4 py-2 bg-terra-600 text-white text-xs font-bold rounded-lg hover:bg-terra-700 transition-colors shrink-0 shadow-sm"
+          >
+            Log In
+          </button>
+        </div>
+      )}
+
+      {/* Authenticated user saved profile manager */}
+      {user && (
+        <div className="bg-earth-50 rounded-xl p-4 border border-earth-200/80 mb-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold text-earth-500 uppercase tracking-wider">Saved Measurements</p>
+              <p className="text-xs font-medium text-night-950 mt-0.5">
+                {isCreatingNew ? 'Creating new profile' : 'Using saved profile'}
+              </p>
+            </div>
+            {savedProfiles.length > 0 && (
+              <button
+                type="button"
+                onClick={isCreatingNew ? handleCancelCreateNew : handleStartCreateNew}
+                className="text-xs font-bold text-terra-600 hover:text-terra-800 transition-colors bg-white px-3 py-1.5 rounded-lg border border-earth-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isCreatingNew && savedProfiles.length >= 2}
+              >
+                {isCreatingNew ? 'Use Saved Profile' : 'Create New Profile'}
+              </button>
+            )}
+          </div>
+
+          {!isCreatingNew && savedProfiles.length >= 2 && (
+            <p className="text-[11px] text-terra-600 font-semibold bg-white p-2.5 rounded-xl border border-earth-200 shadow-sm">
+              ⚠️ Maximum of 2 saved measurement profiles reached. Select a profile below to edit/update its values.
+            </p>
+          )}
+
+          {loadingProfiles ? (
+            <p className="text-xs text-earth-400">Loading saved profiles...</p>
+          ) : savedProfiles.length > 0 && !isCreatingNew ? (
+            <div>
+              <label className="block text-xs font-semibold text-night-950 mb-1.5">Select Profile</label>
+              <select
+                value={selectedProfileId || ''}
+                onChange={(e) => handleProfileChange(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+              >
+                {savedProfiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.profileName} {p.isDefault ? '(Default)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : isCreatingNew ? (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-night-950 mb-1.5">New Profile Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Slim fit, Groom"
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs text-earth-500">You don't have any saved profiles yet. Your measurements will be saved under a new profile name.</p>
+              <div className="mt-3">
+                <label className="block text-xs font-semibold text-night-950 mb-1.5">Profile Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. My Default Profile"
+                  value={newProfileName}
+                  onChange={(e) => setNewProfileName(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Size guide banner */}
       <div className="bg-kente-50 border border-kente-200 rounded-xl p-4 flex items-start gap-3">
         <Info size={18} className="text-kente-600 mt-0.5 shrink-0" />
@@ -705,6 +1441,19 @@ function StepMeasurements({
           </p>
         </div>
       </div>
+
+      {/* Real-time fabric requirement banner */}
+      {isValid && form.fabricQty && form.fabricQty > 0 ? (
+        <div className="bg-terra-50 border border-terra-100 rounded-xl p-4 flex items-center justify-between text-sm animate-fade-in shadow-sm">
+          <div>
+            <p className="font-semibold text-night-950 font-display">Estimated Fabric Required</p>
+            <p className="text-xs text-earth-600 mt-0.5">Calculated in real-time using standard tailors' layout rules.</p>
+          </div>
+          <div className="text-right">
+            <span className="font-display font-extrabold text-terra-700 text-lg">{form.fabricQty} Yards</span>
+          </div>
+        </div>
+      ) : null}
 
       {/* Fields */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -730,9 +1479,9 @@ function StepMeasurements({
               min="0"
               step="0.5"
               placeholder={`Enter ${label.toLowerCase()}`}
-              value={form[key as keyof Measurements] || ''}
-              onChange={(e) => handleChange(key as keyof Measurements, parseFloat(e.target.value) || 0)}
-              className="w-full px-4 py-2.5 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+              value={form[key] || ''}
+              onChange={(e) => handleChange(key, parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-2.5 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all disabled:bg-earth-100 disabled:text-earth-500 disabled:cursor-not-allowed"
             />
           </div>
         ))}
@@ -753,25 +1502,38 @@ function StepMeasurements({
       </div>
 
       {/* Save for future */}
-      <label className="flex items-center gap-3 cursor-pointer group">
-        <span
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-            form.saveForFuture ? 'bg-terra-600 border-terra-600' : 'border-earth-400 group-hover:border-terra-400'
-          }`}
-          onClick={() => handleChange('saveForFuture', !form.saveForFuture)}
-        >
-          {form.saveForFuture && (
-            <svg width="12" height="10" viewBox="0 0 10 8" fill="none">
-              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </span>
-        <span className="text-sm text-earth-700 group-hover:text-night-950 transition-colors" onClick={() => handleChange('saveForFuture', !form.saveForFuture)}>
-          Save my measurements for future orders
-        </span>
-      </label>
+      {(!user || isCreatingNew) && (
+        <label className="flex items-center gap-3 cursor-pointer group">
+          <span
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
+              form.saveForFuture ? 'bg-terra-600 border-terra-600' : 'border-earth-400 group-hover:border-terra-400'
+            }`}
+            onClick={() => handleChange('saveForFuture', !form.saveForFuture)}
+          >
+            {form.saveForFuture && (
+              <svg width="12" height="10" viewBox="0 0 10 8" fill="none">
+                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </span>
+          <span className="text-sm text-earth-700 group-hover:text-night-950 transition-colors" onClick={() => handleChange('saveForFuture', !form.saveForFuture)}>
+            Save my measurements for future orders
+          </span>
+        </label>
+      )}
 
-      <StepNav onBack={onBack} onNext={onNext} nextDisabled={!isValid} nextLabel="Continue to Personalization" />
+      {apiError && (
+        <div className="text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">
+          {apiError}
+        </div>
+      )}
+
+      <StepNav
+        onBack={onBack}
+        onNext={handleContinue}
+        nextDisabled={!isValid || isSaving}
+        nextLabel={isSaving ? 'Saving profile...' : 'Continue to Fabric'}
+      />
     </div>
   );
 }
@@ -793,11 +1555,6 @@ function StepPersonalization({
 }) {
   const [form, setForm] = useState<Personalization>(
     personalization || {
-      embroideryStyle: 'none',
-      necklineType: 'round',
-      sleeveLength: 'full',
-      addLining: false,
-      accessories: [],
       specialRequests: '',
     },
   );
@@ -808,151 +1565,22 @@ function StepPersonalization({
     onUpdate(updated);
   };
 
-  const toggleAccessory = (id: string) => {
-    const updated = form.accessories.includes(id)
-      ? form.accessories.filter((a) => a !== id)
-      : [...form.accessories, id];
-    handleChange('accessories', updated);
-  };
-
   return (
     <div className="space-y-6">
       <div className="text-center">
         <h2 className="font-display text-2xl font-bold text-night-950">Personalise Your Outfit</h2>
-        <p className="mt-1 text-earth-500 text-sm">Customise every detail to make it uniquely yours.</p>
-      </div>
-
-      {/* Embroidery */}
-      <div>
-        <label className="block text-sm font-semibold text-night-950 mb-2">Embroidery Style</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {EMBROIDERY_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange('embroideryStyle', opt.value)}
-              className={`p-3 rounded-xl border-2 text-left transition-all ${
-                form.embroideryStyle === opt.value
-                  ? 'border-kente-500 bg-kente-50'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <p className="text-sm font-semibold text-night-950">{opt.label}</p>
-              <p className="text-[10px] text-earth-500 mt-0.5">{opt.description}</p>
-              <p className="text-[11px] font-bold text-kente-600 mt-1.5">
-                {CUSTOMIZATION_PRICES.embroidery[opt.value] === 0 ? 'Included' : `+${formatNaira(CUSTOMIZATION_PRICES.embroidery[opt.value])}`}
-              </p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Neckline */}
-      <div>
-        <label className="block text-sm font-semibold text-night-950 mb-2">Neckline Type</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {NECKLINE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange('necklineType', opt.value)}
-              className={`py-3 px-3 rounded-xl border-2 text-center transition-all ${
-                form.necklineType === opt.value
-                  ? 'border-kente-500 bg-kente-50'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <p className="text-sm font-semibold text-night-950">{opt.label}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Sleeve */}
-      <div>
-        <label className="block text-sm font-semibold text-night-950 mb-2">Sleeve Length</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {SLEEVE_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => handleChange('sleeveLength', opt.value)}
-              className={`py-3 px-3 rounded-xl border-2 text-center transition-all ${
-                form.sleeveLength === opt.value
-                  ? 'border-kente-500 bg-kente-50'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <p className="text-sm font-semibold text-night-950">{opt.label}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Lining */}
-      <div className="flex items-center justify-between p-4 rounded-xl border border-earth-200 bg-earth-50">
-        <label className="flex items-center gap-3 cursor-pointer group" onClick={() => handleChange('addLining', !form.addLining)}>
-          <span
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-              form.addLining ? 'bg-terra-600 border-terra-600' : 'border-earth-400 group-hover:border-terra-400'
-            }`}
-          >
-            {form.addLining && (
-              <svg width="12" height="10" viewBox="0 0 10 8" fill="none">
-                <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-night-950">Add Premium Lining</p>
-            <p className="text-[10px] text-earth-500">Soft inner lining for extra comfort</p>
-          </div>
-        </label>
-        <span className="text-sm font-bold text-kente-600">+{formatNaira(CUSTOMIZATION_PRICES.lining)}</span>
-      </div>
-
-      {/* Accessories */}
-      <div>
-        <label className="block text-sm font-semibold text-night-950 mb-2">
-          Add Matching Accessories
-          <span className="font-normal text-earth-500 ml-2">(+{formatNaira(CUSTOMIZATION_PRICES.accessories)} each)</span>
-        </label>
-        <div className="grid grid-cols-2 gap-3">
-          {ACCESSORY_OPTIONS.map((acc) => (
-            <button
-              key={acc.id}
-              onClick={() => toggleAccessory(acc.id)}
-              className={`flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                form.accessories.includes(acc.id)
-                  ? 'border-kente-500 bg-kente-50'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <span
-                className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${
-                  form.accessories.includes(acc.id)
-                    ? 'bg-kente-500 border-kente-500'
-                    : 'border-earth-400'
-                }`}
-              >
-                {form.accessories.includes(acc.id) && (
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </span>
-              <span className="text-sm text-night-950">{acc.label}</span>
-            </button>
-          ))}
-        </div>
+        <p className="mt-1 text-earth-500 text-sm">Add any special instructions or preferences for your design.</p>
       </div>
 
       {/* Special requests */}
       <div>
-        <label className="block text-sm font-semibold text-night-950 mb-1.5">Special Requests (Optional)</label>
+        <label className="block text-sm font-semibold text-night-950 mb-1.5 font-display text-lg">Special Requests (Optional)</label>
         <textarea
-          rows={3}
-          placeholder="Any other customisation requests or notes for our tailors..."
+          rows={6}
+          placeholder="Specify neckline preferences, sleeve preferences, style accents, lining, or any other notes for our tailors..."
           value={form.specialRequests}
           onChange={(e) => handleChange('specialRequests', e.target.value)}
-          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none"
+          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none shadow-sm"
         />
       </div>
 
@@ -1130,14 +1758,18 @@ function StepDelivery({
 function StepCart({
   cartItems,
   onRemove,
+  onEdit,
   onAddAnother,
   onCheckout,
 }: {
   cartItems: CartItem[];
   onRemove: (id: string) => void;
+  onEdit: (item: CartItem) => void;
   onAddAnother: () => void;
   onCheckout: () => void;
 }) {
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
+
   const cartTotal = useMemo(
     () => cartItems.reduce((sum, item) => {
       const { basePrice, customizationFee } = calculateOrderTotal(item.order);
@@ -1179,34 +1811,73 @@ function StepCart({
       <div className="space-y-4">
         {cartItems.map((item) => {
           const style = OUTFIT_STYLES.find((s) => s.id === item.order.style);
-          const fabric = FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId);
+          const fabric = item.order.fabric?.type === 'preset'
+            ? {
+                name: item.order.fabric.presetName || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.name || 'Custom Fabric',
+                color: item.order.fabric.presetColor || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.color || '#eee',
+                price: item.order.fabric.presetPrice ?? FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.price ?? 0,
+              }
+            : null;
           const { basePrice, customizationFee } = calculateOrderTotal(item.order);
           const itemTotal = basePrice + customizationFee;
           return (
             <div key={item.id} className="flex items-start gap-4 p-4 rounded-xl border border-earth-200 bg-earth-50">
               {style && (
-                <img src={style.image} alt={style.name}
-                  className="w-16 h-20 object-cover rounded-lg shrink-0 border border-earth-200" />
+                <div
+                  className="relative group/img shrink-0 cursor-pointer overflow-hidden rounded-lg border border-earth-200 w-16 h-20 bg-earth-100"
+                  onClick={() => setActiveImageUrl(style.image)}
+                  title="View larger image"
+                >
+                  <img
+                    src={style.image}
+                    alt={style.name}
+                    className="w-full h-full object-cover transition-transform group-hover/img:scale-105 duration-200"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                    <span className="text-[10px] text-white font-semibold">Zoom</span>
+                  </div>
+                </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-display text-sm font-bold text-night-950">{style?.name ?? 'Custom Outfit'}</p>
-                <div className="mt-1 space-y-0.5 text-[11px] text-earth-500">
-                  {fabric && <p>Fabric: {fabric.name}</p>}
-                  {item.order.personalization && (
-                    <>
-                      <p>Embroidery: {item.order.personalization.embroideryStyle}</p>
-                      <p>Neckline: {item.order.personalization.necklineType} · Sleeves: {item.order.personalization.sleeveLength}</p>
-                    </>
+                <p className="font-display text-base font-extrabold text-night-950">
+                  {item.order.productName || style?.name || 'Custom Outfit'}
+                </p>
+                <div className="mt-1.5 space-y-1 text-xs text-earth-500">
+                  {item.order.customStyleInfo && (
+                    <p>Style: <span className="font-semibold text-night-800">{item.order.customStyleInfo.name}</span></p>
+                  )}
+                  {fabric && (
+                    <p>
+                      Fabric: <span className="font-semibold text-night-800">{fabric.name}</span>{' '}
+                      <span className="text-terra-600 font-medium">
+                        ({fabric.price > 0 ? `+${formatNaira(fabric.price)}` : 'Included'})
+                      </span>
+                    </p>
+                  )}
+                  {item.order.personalization?.specialRequests && (
+                    <p className="italic text-earth-400 mt-1">
+                      Request: "{item.order.personalization.specialRequests}"
+                    </p>
                   )}
                 </div>
-                <p className="mt-2 text-sm font-bold text-kente-600">{formatNaira(itemTotal)}</p>
+                <p className="mt-3 text-sm font-bold text-kente-600">{formatNaira(itemTotal)}</p>
               </div>
-              <button
-                onClick={() => onRemove(item.id)}
-                className="p-1.5 rounded-lg text-earth-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
-              >
-                <X size={16} />
-              </button>
+              <div className="flex flex-col gap-2 shrink-0">
+                <button
+                  onClick={() => onRemove(item.id)}
+                  className="p-1.5 rounded-lg text-earth-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  title="Remove item"
+                >
+                  <X size={16} />
+                </button>
+                <button
+                  onClick={() => onEdit(item)}
+                  className="p-1.5 rounded-lg text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-colors"
+                  title="Edit customization"
+                >
+                  <Pencil size={15} />
+                </button>
+              </div>
             </div>
           );
         })}
@@ -1235,6 +1906,26 @@ function StepCart({
           <ChevronRight size={16} />
         </button>
       </div>
+
+      {/* Lightbox Modal */}
+      {activeImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 cursor-pointer"
+          onClick={() => setActiveImageUrl(null)}
+        >
+          <button
+            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+            onClick={() => setActiveImageUrl(null)}
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={activeImageUrl}
+            alt="Enlarged style preview"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1247,17 +1938,29 @@ function StepOrderSummary({
   order,
   cartItems,
   onEditStep,
+  onEditItem,
   onApplyPromo,
   onNext,
   onBack,
+  isProcessing,
+  paymentError,
+  isOnline,
+  createdOrders,
 }: {
   order: OrderData;
   cartItems: CartItem[];
   onEditStep: (step: number) => void;
+  onEditItem: (item: CartItem) => void;
   onApplyPromo: (code: string) => void;
   onNext: () => void;
   onBack: () => void;
+  isProcessing: boolean;
+  paymentError: string | null;
+  isOnline: boolean;
+  createdOrders: any[];
 }) {
+  const navigate = useNavigate();
+  const { user } = useAppSelector((state) => state.auth);
   const [promoCode, setPromoCode] = useState(order.promoCode);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState(order.promoCode === 'JHAZ10');
@@ -1272,10 +1975,6 @@ function StepOrderSummary({
   const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
   const discount = order.promoCode === 'JHAZ10' ? (itemsSubtotal + deliveryFee) * 0.1 : 0;
   const grandTotal = itemsSubtotal + deliveryFee - discount;
-  const pricing = useMemo(() => calculateOrderTotal(order), [order]);
-  const style = OUTFIT_STYLES.find((s) => s.id === order.style);
-  const fabric = FABRIC_PRESETS.find((f) => f.id === order.fabric?.presetId);
-
   const estimatedDelivery = order.delivery?.deliveryMethod === 'express'
     ? addDays(new Date(), 10)
     : addDays(new Date(), 21);
@@ -1293,19 +1992,6 @@ function StepOrderSummary({
     }
   };
 
-  // Summary section card
-  const SummaryCard = ({ title, stepNum, children }: { title: string; stepNum: number; children: React.ReactNode }) => (
-    <div className="bg-earth-50 rounded-xl p-4 border border-earth-200">
-      <div className="flex justify-between items-start">
-        <div className="flex-1">{children}</div>
-        <button onClick={() => onEditStep(stepNum)} className="text-xs text-terra-600 hover:text-terra-800 font-semibold flex items-center gap-1 shrink-0 ml-3">
-          <Pencil size={12} />
-          Edit
-        </button>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-5">
       <div className="text-center">
@@ -1314,61 +2000,130 @@ function StepOrderSummary({
       </div>
 
       {/* Sections */}
-      <div className="space-y-3">
-        <SummaryCard title="Outfit Style" stepNum={1}>
-          <h3 className="text-sm font-semibold text-night-950">Outfit Style</h3>
-          <p className="text-sm text-earth-600">{style?.name}</p>
-          <p className="text-xs font-semibold text-kente-600">{formatNaira(style?.basePrice || 0)}</p>
-        </SummaryCard>
+      <div className="space-y-4">
+        {cartItems.map((item, index) => {
+          const itemStyle = item.order.customStyleInfo || OUTFIT_STYLES.find((s) => s.id === item.order.style);
+          const { basePrice, customizationFee } = calculateOrderTotal(item.order);
+          const itemTotal = basePrice + customizationFee;
 
-        <SummaryCard title="Fabric" stepNum={2}>
-          <h3 className="text-sm font-semibold text-night-950">Fabric</h3>
-          {order.fabric?.type === 'preset' ? (
-            <div className="flex items-center gap-2 mt-1">
-              <div className="h-5 w-5 rounded border border-earth-200" style={{ backgroundColor: fabric?.color }} />
-              <span className="text-sm text-earth-600">{fabric?.name}</span>
+          return (
+            <div key={item.id} className="bg-earth-50 rounded-xl p-5 border border-earth-200 space-y-4 shadow-sm">
+              <div className="flex justify-between items-start border-b border-earth-200 pb-3">
+                <div>
+                  <span className="text-[10px] text-terra-600 font-semibold tracking-widest uppercase">
+                    Item {index + 1}
+                  </span>
+                  <h3 className="font-display text-base font-extrabold text-night-950">
+                    {item.order.productName || itemStyle?.name || 'Custom Outfit'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => onEditItem(item)}
+                  className="text-xs text-terra-600 hover:text-terra-800 font-semibold flex items-center gap-1 shrink-0 ml-3"
+                  title="Edit item customization"
+                >
+                  <Pencil size={12} />
+                  Edit
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-earth-600">
+                {/* Style */}
+                <div>
+                  <span className="block text-[10px] text-earth-400 uppercase font-semibold">Style Option</span>
+                  <span className="font-semibold text-night-950">{item.order.customStyleInfo?.name || 'Standard'}</span>
+                </div>
+
+                {/* Fabric */}
+                <div>
+                  <span className="block text-[10px] text-earth-400 uppercase font-semibold">Fabric</span>
+                  {item.order.fabric?.type === 'preset' ? (
+                    <div className="flex flex-col mt-0.5 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full border border-earth-200" style={{ backgroundColor: item.order.fabric.presetColor }} />
+                        <span className="font-semibold text-night-950">{item.order.fabric.presetName}</span>
+                      </div>
+                      {item.order.measurements?.fabricQty && (
+                        <div className="text-xs text-earth-500 font-medium mt-0.5">
+                          Required: <span className="font-semibold text-night-950">{item.order.measurements.fabricQty} yards</span>
+                          <span> ({Math.ceil(item.order.measurements.fabricQty / (item.order.fabric.presetYardsPerUnit || 1.0))} {item.order.fabric.presetUnit || 'yard'}{Math.ceil(item.order.measurements.fabricQty / (item.order.fabric.presetYardsPerUnit || 1.0)) > 1 ? 's' : ''} needed)</span>
+                          {item.order.fabric.presetPrice && item.order.fabric.presetPrice > 0 ? (
+                            <span> at <span className="font-semibold text-terra-600">{formatNaira(item.order.fabric.presetPrice)}</span> per {item.order.fabric.presetUnit || 'yard'}</span>
+                          ) : null}
+                        </div>
+                      )}
+                      <div className="text-terra-600 text-xs font-semibold mt-0.5">
+                        Fabric Cost: {item.order.fabric.presetPrice && item.order.fabric.presetPrice > 0 ? `+${formatNaira(item.order.fabric.presetPrice * Math.ceil((item.order.measurements?.fabricQty || 2.0) / (item.order.fabric.presetYardsPerUnit || 1.0)))}` : 'Included'}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col mt-0.5 space-y-1">
+                      <span className="font-semibold text-night-950">Custom Fabric Uploaded</span>
+                      {item.order.measurements?.fabricQty && (
+                        <div className="text-xs text-earth-500 font-medium">
+                          Required: <span className="font-semibold text-night-950">{item.order.measurements.fabricQty} yards</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Measurements */}
+                {item.order.measurements && (
+                  <div className="sm:col-span-2">
+                    <span className="block text-[10px] text-earth-400 uppercase font-semibold mb-1">Measurements</span>
+                    <div className="grid grid-cols-5 gap-2 bg-white rounded-lg p-2.5 border border-earth-200/60 text-xs">
+                      <div><span className="text-earth-400 block text-[9px] uppercase">Chest</span><span className="font-bold text-night-950">{item.order.measurements.chest}cm</span></div>
+                      <div><span className="text-earth-400 block text-[9px] uppercase">Waist</span><span className="font-bold text-night-950">{item.order.measurements.waist}cm</span></div>
+                      <div><span className="text-earth-400 block text-[9px] uppercase">Hips</span><span className="font-bold text-night-950">{item.order.measurements.hips}cm</span></div>
+                      <div><span className="text-earth-400 block text-[9px] uppercase">Height</span><span className="font-bold text-night-950">{item.order.measurements.height}cm</span></div>
+                      <div><span className="text-earth-400 block text-[9px] uppercase">Shoulder</span><span className="font-bold text-night-950">{item.order.measurements.shoulderWidth}cm</span></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Special Requests */}
+                <div className="sm:col-span-2">
+                  <span className="block text-[10px] text-earth-400 uppercase font-semibold">Special Requests</span>
+                  <p className="text-night-950 italic mt-0.5 text-xs">
+                    {item.order.personalization?.specialRequests ? `"${item.order.personalization.specialRequests}"` : 'No special requests'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-t border-earth-200/60 pt-3 flex justify-between items-center text-sm">
+                <span className="text-earth-500 font-medium">Item Subtotal</span>
+                <span className="font-bold text-kente-600">{formatNaira(itemTotal)}</span>
+              </div>
             </div>
-          ) : (
-            <p className="text-sm text-earth-600">Custom fabric uploaded</p>
-          )}
-          {order.fabric?.notes && <p className="text-[10px] text-earth-500 mt-1 italic">Note: {order.fabric.notes}</p>}
-        </SummaryCard>
+          );
+        })}
 
-        <SummaryCard title="Measurements" stepNum={3}>
-          <h3 className="text-sm font-semibold text-night-950">Measurements</h3>
-          <div className="grid grid-cols-3 gap-x-4 gap-y-1 mt-1 text-xs text-earth-600">
-            <span>Chest: {order.measurements?.chest}cm</span>
-            <span>Waist: {order.measurements?.waist}cm</span>
-            <span>Hips: {order.measurements?.hips}cm</span>
-            <span>Height: {order.measurements?.height}cm</span>
-            <span>Shoulder: {order.measurements?.shoulderWidth}cm</span>
+        {/* Delivery Details */}
+        {order.delivery && (
+          <div className="bg-earth-50 rounded-xl p-5 border border-earth-200 space-y-3 shadow-sm">
+            <div className="flex justify-between items-start border-b border-earth-200 pb-3">
+              <div>
+                <h3 className="font-display text-base font-extrabold text-night-950">Delivery Address</h3>
+              </div>
+              <button
+                onClick={() => onEditStep(6)}
+                className="text-xs text-terra-600 hover:text-terra-800 font-semibold flex items-center gap-1 shrink-0 ml-3"
+              >
+                <Pencil size={12} />
+                Edit
+              </button>
+            </div>
+            <div className="text-sm text-earth-600 space-y-1">
+              <p className="font-semibold text-night-950">{order.delivery.fullName} · {order.delivery.phoneNumber}</p>
+              <p>{order.delivery.address}</p>
+              <p>{order.delivery.city}, {order.delivery.state}, Nigeria</p>
+              <p className="font-semibold text-terra-700 mt-2">
+                {order.delivery.deliveryMethod === 'express' ? 'Express' : 'Standard'} Delivery (+{formatNaira(DELIVERY_PRICES[order.delivery.deliveryMethod])})
+              </p>
+            </div>
           </div>
-        </SummaryCard>
-
-        <SummaryCard title="Personalization" stepNum={4}>
-          <h3 className="text-sm font-semibold text-night-950">Personalisation</h3>
-          <div className="mt-1 space-y-0.5 text-xs text-earth-600">
-            <p>Embroidery: {order.personalization?.embroideryStyle}</p>
-            <p>Neckline: {order.personalization?.necklineType}</p>
-            <p>Sleeves: {order.personalization?.sleeveLength}</p>
-            {order.personalization?.addLining && <p>Premium Lining: Yes</p>}
-            {(order.personalization?.accessories?.length ?? 0) > 0 && (
-              <p>Accessories: {order.personalization?.accessories.join(', ')}</p>
-            )}
-          </div>
-        </SummaryCard>
-
-        <SummaryCard title="Delivery" stepNum={6}>
-          <h3 className="text-sm font-semibold text-night-950">Delivery</h3>
-          <div className="mt-1 space-y-0.5 text-xs text-earth-600">
-            <p>{order.delivery?.fullName} · {order.delivery?.phoneNumber}</p>
-            <p>{order.delivery?.address}</p>
-            <p>{order.delivery?.city}, {order.delivery?.state}, Nigeria</p>
-            <p className="font-semibold text-night-950 mt-1">
-              {order.delivery?.deliveryMethod === 'express' ? 'Express' : 'Standard'} Delivery
-            </p>
-          </div>
-        </SummaryCard>
+        )}
       </div>
 
       {/* Promo code */}
@@ -1421,161 +2176,42 @@ function StepOrderSummary({
         {formatDate(estimatedDelivery)}
       </p>
 
-      <StepNav onBack={onBack} onNext={onNext} nextLabel="Proceed to Payment" nextClassName="bg-kente-600 hover:bg-kente-700 text-white" />
-    </div>
-  );
-}
+      {/* Error display */}
+      {paymentError && (
+        <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
+          ❌ {paymentError}
+        </div>
+      )}
 
-// ═══════════════════════════════════════════════════════
-// Step 7 – Payment (Paystack Dummy)
-// ═══════════════════════════════════════════════════════
+      {/* Offline Warning */}
+      {!isOnline && (
+        <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 border border-amber-200">
+          📡 You are offline. Order will be saved and you can pay later when you reconnect.
+        </div>
+      )}
 
-function StepPayment({
-  order,
-  cartItems,
-  onComplete,
-  onBack,
-}: {
-  order: OrderData;
-  cartItems: CartItem[];
-  onComplete: (ref: string) => void;
-  onBack: () => void;
-}) {
-  type PayMethod = 'card' | 'bank' | 'ussd' | 'mobile';
-  const METHODS = [
-    { id: 'card' as PayMethod, label: 'Card Payment', desc: 'Debit/Credit Card', Icon: CreditCard },
-    { id: 'bank' as PayMethod, label: 'Bank Transfer', desc: 'Direct bank transfer', Icon: Building2 },
-    { id: 'ussd' as PayMethod, label: 'USSD', desc: 'Pay with USSD code', Icon: Phone },
-    { id: 'mobile' as PayMethod, label: 'Mobile Money', desc: 'Mobile wallet', Icon: Smartphone },
-  ];
+      {/* Auth warning */}
+      {!user && (
+        <div className="rounded-xl bg-amber-50 p-4 text-sm text-amber-700 border border-amber-200">
+          🔑 You must be logged in to place an order.
+        </div>
+      )}
 
-  const [selectedMethod, setSelectedMethod] = useState<PayMethod>('card');
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const pricing = useMemo(() => {
-    const itemsSubtotal = cartItems.reduce((sum, item) => {
-      const { basePrice, customizationFee } = calculateOrderTotal(item.order);
-      return sum + basePrice + customizationFee;
-    }, 0);
-    const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
-    const total = itemsSubtotal + deliveryFee;
-    return { total };
-  }, [order, cartItems]);
-
-  const handlePay = async () => {
-    setIsProcessing(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    const ref = `PSK_${Date.now()}_${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
-    setIsProcessing(false);
-    onComplete(ref);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <h2 className="font-display text-2xl font-bold text-night-950">Secure Payment</h2>
-        <p className="mt-1 text-earth-500 text-sm">Complete your order with Paystack secure checkout.</p>
-      </div>
-
-      {/* Paystack branding */}
-      <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-xl p-4 border border-sky-200/60">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-sky-500 text-white font-bold px-2 py-0.5 rounded text-xs tracking-wide">paystack</div>
-            <span className="text-xs text-earth-500">Secure Checkout</span>
+      {/* Security badges (Only shown when online) */}
+      {isOnline && (
+        <div className="flex items-center justify-center gap-5 py-3 border-y border-earth-200">
+          <div className="flex items-center gap-1.5 text-earth-500">
+            <Lock size={14} />
+            <span className="text-[10px] font-semibold">Encrypted</span>
           </div>
-          <div className="flex items-center gap-1 text-savanna-700">
+          <div className="flex items-center gap-1.5 text-earth-500">
             <ShieldCheck size={14} />
-            <span className="text-[10px] font-semibold">256-bit SSL</span>
+            <span className="text-[10px] font-semibold">Secured by Paystack</span>
           </div>
-        </div>
-      </div>
-
-      {/* Amount */}
-      <div className="bg-night-950 rounded-xl p-6 text-center">
-        <p className="text-earth-400 text-sm">Amount to Pay</p>
-        <p className="font-display text-3xl font-bold text-kente-400 mt-1">{formatNaira(pricing.total)}</p>
-      </div>
-
-      {/* Payment methods */}
-      <div>
-        <label className="block text-sm font-semibold text-night-950 mb-2">Select Payment Method</label>
-        <div className="grid grid-cols-2 gap-3">
-          {METHODS.map(({ id, label, desc, Icon }) => (
-            <button
-              key={id}
-              onClick={() => setSelectedMethod(id)}
-              className={`flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-                selectedMethod === id
-                  ? 'border-kente-500 bg-kente-50'
-                  : 'border-earth-200 hover:border-terra-400'
-              }`}
-            >
-              <Icon size={20} className={selectedMethod === id ? 'text-kente-600' : 'text-earth-400'} />
-              <div>
-                <p className="text-sm font-semibold text-night-950">{label}</p>
-                <p className="text-[10px] text-earth-500">{desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Card form mock */}
-      {selectedMethod === 'card' && (
-        <div className="border border-earth-200 rounded-xl p-4 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-night-950 mb-1">Card Number</label>
-            <div className="flex items-center border border-earth-200 rounded-xl px-4 py-2.5">
-              <CreditCard size={16} className="text-earth-400 mr-2 shrink-0" />
-              <input type="text" placeholder="0000 0000 0000 0000" disabled={isProcessing} className="flex-1 bg-transparent outline-none text-sm font-body text-night-950 placeholder-earth-400" />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-night-950 mb-1">Expiry Date</label>
-              <input type="text" placeholder="MM/YY" disabled={isProcessing} className="w-full border border-earth-200 rounded-xl px-4 py-2.5 text-sm font-body text-night-950 placeholder-earth-400" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-night-950 mb-1">CVV</label>
-              <input type="text" placeholder="123" disabled={isProcessing} className="w-full border border-earth-200 rounded-xl px-4 py-2.5 text-sm font-body text-night-950 placeholder-earth-400" />
-            </div>
-          </div>
+          <div className="bg-sky-500 text-white font-bold px-1.5 py-0.5 rounded text-[9px] tracking-wide">paystack</div>
         </div>
       )}
 
-      {selectedMethod === 'bank' && (
-        <div className="border border-earth-200 rounded-xl p-4 bg-earth-50">
-          <p className="text-sm text-earth-600">You will receive bank transfer details after clicking "Place Order & Pay". Complete the transfer within 30 minutes.</p>
-        </div>
-      )}
-
-      {selectedMethod === 'ussd' && (
-        <div className="border border-earth-200 rounded-xl p-4 bg-earth-50">
-          <p className="text-sm text-earth-600">Select your bank and dial the USSD code on your phone to complete payment.</p>
-        </div>
-      )}
-
-      {selectedMethod === 'mobile' && (
-        <div className="border border-earth-200 rounded-xl p-4 bg-earth-50">
-          <p className="text-sm text-earth-600">Pay using your mobile money wallet. Supported: OPay, Palmpay, Kuda, GTB Mobile.</p>
-        </div>
-      )}
-
-      {/* Security badges */}
-      <div className="flex items-center justify-center gap-5 py-3 border-y border-earth-200">
-        <div className="flex items-center gap-1.5 text-earth-500">
-          <Lock size={14} />
-          <span className="text-[10px] font-semibold">Encrypted</span>
-        </div>
-        <div className="flex items-center gap-1.5 text-earth-500">
-          <ShieldCheck size={14} />
-          <span className="text-[10px] font-semibold">Secured by Paystack</span>
-        </div>
-        <div className="bg-sky-500 text-white font-bold px-1.5 py-0.5 rounded text-[9px] tracking-wide">paystack</div>
-      </div>
-
-      {/* Actions */}
       <div className="flex justify-between pt-2">
         <button
           onClick={onBack}
@@ -1585,27 +2221,38 @@ function StepPayment({
           <ChevronLeft size={16} />
           Back
         </button>
-        <button
-          onClick={handlePay}
-          disabled={isProcessing}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-60"
-        >
-          {isProcessing ? (
-            <>
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Processing…
-            </>
-          ) : (
-            <>Place Order & Pay {formatNaira(pricing.total)}</>
-          )}
-        </button>
+
+        {!user ? (
+          <button
+            onClick={() => navigate(`/login?redirect=${encodeURIComponent('/order?step=7')}`)}
+            className="px-6 py-2.5 rounded-xl text-sm font-bold bg-terra-600 hover:bg-terra-700 text-white transition-all shadow-sm"
+          >
+            Log In to Continue
+          </button>
+        ) : (
+          <button
+            onClick={onNext}
+            disabled={isProcessing}
+            className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-60 min-w-[200px]"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                {createdOrders.length > 0 ? "Initializing Payment..." : "Creating Order..."}
+              </>
+            ) : isOnline ? (
+              <>Pay Now with Paystack ({formatNaira(grandTotal)})</>
+            ) : (
+              `Save Order & Pay Later (${formatNaira(grandTotal)})`
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
 }
+
+
 
 // ═══════════════════════════════════════════════════════
 // Step 8 – Order Confirmation
@@ -1615,28 +2262,44 @@ function StepConfirmation({
   order,
   cartItems,
   paymentReference,
+  confirmedOrderInfo,
 }: {
   order: OrderData;
   cartItems: CartItem[];
   paymentReference: string;
+  confirmedOrderInfo?: {
+    orderId: string;
+    paymentReference: string;
+    totalPaid: number;
+    itemCount: number;
+    deliveryMethod: string;
+    deliveryAddress: string;
+    styleName: string;
+    estimatedDelivery: Date;
+  } | null;
 }) {
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
 
-  const totalPaid = useMemo(() => {
+  const totalPaid = confirmedOrderInfo?.totalPaid ?? (() => {
     const itemsSubtotal = cartItems.reduce((sum, item) => {
       const { basePrice, customizationFee } = calculateOrderTotal(item.order);
       return sum + basePrice + customizationFee;
     }, 0);
     const deliveryFee = order.delivery ? DELIVERY_PRICES[order.delivery.deliveryMethod] : 0;
     return itemsSubtotal + deliveryFee;
-  }, [order, cartItems]);
-  const style = OUTFIT_STYLES.find((s) => s.id === cartItems[0]?.order?.style || order.style);
-  const orderId = `JHZ-${Date.now().toString(36).toUpperCase()}`;
+  })();
 
-  const estimatedDelivery = order.delivery?.deliveryMethod === 'express'
+  const styleName = confirmedOrderInfo?.styleName || OUTFIT_STYLES.find((s) => s.id === cartItems[0]?.order?.style || order.style)?.name || 'Outfit';
+  const orderId = confirmedOrderInfo?.orderId || `JHZ-${Date.now().toString(36).toUpperCase()}`;
+
+  const estimatedDelivery = confirmedOrderInfo?.estimatedDelivery || (order.delivery?.deliveryMethod === 'express'
     ? addDays(new Date(), 10)
-    : addDays(new Date(), 21);
+    : addDays(new Date(), 21));
+
+  const itemCount = confirmedOrderInfo?.itemCount ?? cartItems.length;
+  const deliveryMethod = confirmedOrderInfo?.deliveryMethod || order.delivery?.deliveryMethod || 'standard';
+  const deliveryAddress = confirmedOrderInfo?.deliveryAddress || (order.delivery ? `${order.delivery.city}, ${order.delivery.state}` : 'N/A');
 
   const copy = (text: string, type: 'order' | 'ref') => {
     navigator.clipboard.writeText(text);
@@ -1659,7 +2322,7 @@ function StepConfirmation({
       <div>
         <h2 className="font-display text-2xl font-bold text-night-950">Order Placed Successfully!</h2>
         <p className="mt-2 text-earth-500 text-sm">
-          Thank you for choosing Jhaz-Imprints. Your custom {style?.name} is now being prepared.
+          Thank you for choosing Jhaz-Imprints. Your custom {styleName} is now being prepared.
         </p>
       </div>
 
@@ -1689,9 +2352,9 @@ function StepConfirmation({
 
         {/* Summary */}
         <div className="space-y-1.5 text-sm">
-          <div className="flex justify-between"><span className="text-earth-500">Items</span><span className="font-semibold text-night-950">{cartItems.length} outfit{cartItems.length !== 1 ? 's' : ''}</span></div>
-          <div className="flex justify-between"><span className="text-earth-500">Delivery Method</span><span className="font-semibold text-night-950 capitalize">{order.delivery?.deliveryMethod}</span></div>
-          <div className="flex justify-between"><span className="text-earth-500">Delivery Address</span><span className="font-semibold text-night-950 text-right max-w-[200px]">{order.delivery?.city}, {order.delivery?.state}, Nigeria</span></div>
+          <div className="flex justify-between"><span className="text-earth-500">Items</span><span className="font-semibold text-night-950">{itemCount} outfit{itemCount !== 1 ? 's' : ''}</span></div>
+          <div className="flex justify-between"><span className="text-earth-500">Delivery Method</span><span className="font-semibold text-night-950 capitalize">{deliveryMethod}</span></div>
+          <div className="flex justify-between"><span className="text-earth-500">Delivery Address</span><span className="font-semibold text-night-950 text-right max-w-[200px]">{deliveryAddress}{deliveryAddress !== 'N/A' && !deliveryAddress.toLowerCase().includes('nigeria') ? ', Nigeria' : ''}</span></div>
           <div className="flex justify-between pt-2 border-t border-earth-200">
             <span className="font-bold text-night-950">Total Paid</span>
             <span className="font-bold text-terra-700">{formatNaira(totalPaid)}</span>
@@ -1717,7 +2380,7 @@ function StepConfirmation({
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
         <Link
-          to="/catalog"
+          to="/my-orders"
           className="flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-sm btn-primary"
         >
           <Package size={16} />

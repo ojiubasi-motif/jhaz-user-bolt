@@ -1,17 +1,19 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { X, ShoppingBag, ChevronRight, Package, Trash2 } from 'lucide-react';
+import { X, ShoppingBag, ChevronRight, Package, Trash2, Pencil } from 'lucide-react';
 
 // ── Types (mirrors Order.tsx) ──────────────────────────────────────────────
 
-type OutfitStyle = 'agbada' | 'ankara' | 'kaftan' | 'aso-oke' | 'babariga' | 'iro-buba' | 'senator';
-type EmbroideryStyle = 'none' | 'minimal' | 'moderate' | 'elaborate';
-type NecklineType = 'round' | 'v-neck' | 'mandarin' | 'open-collar';
-type SleeveLength = 'short' | 'three-quarter' | 'full' | 'cap';
+type OutfitStyle = string;
 
 interface FabricSelection {
   type: 'preset' | 'custom';
   presetId?: string;
+  presetName?: string;
+  presetColor?: string;
+  presetPrice?: number;
+  presetYardsPerUnit?: number;
+  presetUnit?: string;
   customImageUrl?: string;
   notes?: string;
 }
@@ -19,19 +21,25 @@ interface FabricSelection {
 interface Measurements {
   chest: number; waist: number; hips: number;
   height: number; shoulderWidth: number; saveForFuture: boolean;
+  fabricQty?: number;
+  fabricUnit?: string;
 }
 
 interface Personalization {
-  embroideryStyle: EmbroideryStyle;
-  necklineType: NecklineType;
-  sleeveLength: SleeveLength;
-  addLining: boolean;
-  accessories: string[];
   specialRequests: string;
 }
 
 interface OrderData {
+  productId?: string;
+  productName?: string;
   style: OutfitStyle | null;
+  customStyleInfo?: {
+    id: string;
+    name: string;
+    description: string;
+    basePrice: number;
+    image: string;
+  } | null;
   fabric: FabricSelection | null;
   measurements: Measurements | null;
   personalization: Personalization | null;
@@ -67,11 +75,7 @@ const FABRIC_PRESETS = [
   { id: 'brocade-navy',     name: 'Brocade — Navy',              color: '#1B2A4E',  price: 20000 },
 ] as const;
 
-const CUSTOMIZATION_PRICES = {
-  embroidery: { none: 0, minimal: 5000, moderate: 12000, elaborate: 25000 },
-  lining: 8000,
-  accessories: 3000,
-} as const;
+
 
 const CART_KEY = 'jhaz_cart';
 
@@ -97,15 +101,14 @@ function saveCart(items: CartItem[]) {
 }
 
 function itemSubtotal(order: OrderData): number {
-  const style = OUTFIT_STYLES.find((s) => s.id === order.style);
-  const basePrice = style?.basePrice ?? 0;
-  const fabric = FABRIC_PRESETS.find((f) => f.id === order.fabric?.presetId);
-  let fee = fabric?.price ?? 0;
-  if (order.personalization) {
-    fee += CUSTOMIZATION_PRICES.embroidery[order.personalization.embroideryStyle];
-    if (order.personalization.addLining) fee += CUSTOMIZATION_PRICES.lining;
-    fee += order.personalization.accessories.length * CUSTOMIZATION_PRICES.accessories;
-  }
+  const basePrice = order.customStyleInfo?.basePrice ?? OUTFIT_STYLES.find((s) => s.id === order.style)?.basePrice ?? 0;
+  const fabricQty = order.measurements?.fabricQty || 2.0;
+  const yardsPerUnit = order.fabric?.presetYardsPerUnit || 1.0;
+  const unitsNeeded = Math.ceil(fabricQty / yardsPerUnit);
+  const fabricPrice = order.fabric?.type === 'preset'
+    ? (order.fabric.presetPrice ?? 0)
+    : 0;
+  const fee = fabricPrice * unitsNeeded;
   return basePrice + fee;
 }
 
@@ -114,17 +117,18 @@ function itemSubtotal(order: OrderData): number {
 export default function Cart() {
   const navigate = useNavigate();
   const [items, setItems] = useState<CartItem[]>(loadCart);
+  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
 
   // Keep navbar badge in sync
   useEffect(() => {
     saveCart(items);
   }, [items]);
 
-  const remove = (id: string) => setItems((prev) => prev.filter((c) => c.id !== id));
+  const remove = (id: string) => setItems((prev: CartItem[]) => prev.filter((c: CartItem) => c.id !== id));
   const clear  = () => setItems([]);
 
   const cartTotal = useMemo(
-    () => items.reduce((sum, item) => sum + itemSubtotal(item.order), 0),
+    () => items.reduce((sum: number, item: CartItem) => sum + itemSubtotal(item.order), 0),
     [items],
   );
 
@@ -183,9 +187,18 @@ export default function Cart() {
               </button>
             </div>
 
-            {items.map((item, index) => {
-              const style  = OUTFIT_STYLES.find((s) => s.id === item.order.style);
-              const fabric = FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId);
+            {items.map((item: CartItem, index: number) => {
+              const style  = item.order.customStyleInfo || OUTFIT_STYLES.find((s) => s.id === item.order.style);
+              const fabric = item.order.fabric?.type === 'preset'
+                ? {
+                    id: item.order.fabric.presetId,
+                    name: item.order.fabric.presetName || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.name || 'Custom Fabric',
+                    color: item.order.fabric.presetColor || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.color || '#eee',
+                    price: item.order.fabric.presetPrice ?? 0,
+                    yardsPerUnit: item.order.fabric.presetYardsPerUnit || 1.0,
+                    unit: item.order.fabric.presetUnit || 'yard',
+                  }
+                : null;
               const total  = itemSubtotal(item.order);
 
               return (
@@ -194,13 +207,22 @@ export default function Cart() {
                   className="bg-white rounded-2xl border border-earth-200/60 shadow-sm p-4 flex gap-4 group"
                 >
                   {/* Outfit thumbnail */}
-                  <div className="shrink-0 w-20 h-28 rounded-xl overflow-hidden border border-earth-100 bg-earth-100">
+                  <div
+                    className="relative group/img shrink-0 w-20 h-28 rounded-xl overflow-hidden border border-earth-100 bg-earth-100 cursor-pointer"
+                    onClick={() => style && setActiveImageUrl(style.image)}
+                    title="View larger image"
+                  >
                     {style ? (
-                      <img
-                        src={style.image}
-                        alt={style.name}
-                        className="w-full h-full object-cover"
-                      />
+                      <>
+                        <img
+                          src={style.image}
+                          alt={style.name}
+                          className="w-full h-full object-cover transition-transform group-hover/img:scale-105 duration-200"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity duration-200">
+                          <span className="text-xs text-white font-semibold">Zoom</span>
+                        </div>
+                      </>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package size={20} className="text-earth-300" />
@@ -216,54 +238,55 @@ export default function Cart() {
                         <span className="text-[10px] text-terra-600 font-semibold tracking-widest uppercase">
                           Item {index + 1}
                         </span>
-                        <h3 className="font-display text-base font-bold text-night-950 leading-snug">
-                          {style?.name ?? 'Custom Outfit'}
+                        <h3 className="font-display text-base font-extrabold text-night-950 leading-snug">
+                          {item.order.productName || style?.name || 'Custom Outfit'}
                         </h3>
                       </div>
-                      <button
-                        onClick={() => remove(item.id)}
-                        className="p-1.5 rounded-lg text-earth-300 hover:text-red-500 hover:bg-red-50 transition-all shrink-0"
-                        aria-label="Remove item"
-                      >
-                        <X size={15} />
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => navigate(`/order?step=1&edit=${item.id}`)}
+                          className="p-1.5 rounded-lg text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-all"
+                          title="Edit Customization"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => remove(item.id)}
+                          className="p-1.5 rounded-lg text-earth-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          title="Remove item"
+                        >
+                          <X size={15} />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Spec pills */}
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    {/* Customization Details */}
+                    <div className="mt-1.5 space-y-1 text-xs text-earth-500">
+                      {item.order.customStyleInfo && (
+                        <p>Style: <span className="font-semibold text-night-800">{item.order.customStyleInfo.name}</span></p>
+                      )}
                       {fabric && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-earth-100 text-[10px] text-earth-600 font-medium">
+                        <p className="flex items-center gap-1.5 flex-wrap">
+                          Fabric: 
                           <span
-                            className="w-2.5 h-2.5 rounded-full border border-earth-300 shrink-0"
+                            className="w-2 h-2 rounded-full border border-earth-300 inline-block"
                             style={{ backgroundColor: fabric.color }}
                           />
-                          {fabric.name.split('—')[1]?.trim() ?? fabric.name}
-                        </span>
+                          <span className="font-semibold text-night-800">{fabric.name.split('—')[1]?.trim() ?? fabric.name}</span>
+                          {item.order.measurements?.fabricQty && (
+                            <span className="text-earth-500 font-medium">
+                              ({item.order.measurements.fabricQty} yd needed - {Math.ceil(item.order.measurements.fabricQty / fabric.yardsPerUnit)} {fabric.unit}{Math.ceil(item.order.measurements.fabricQty / fabric.yardsPerUnit) > 1 ? 's' : ''} req.)
+                            </span>
+                          )}
+                          <span className="text-terra-600 font-medium">
+                            ({fabric.price > 0 ? `+${formatNaira(fabric.price * Math.ceil((item.order.measurements?.fabricQty || 2.0) / fabric.yardsPerUnit))}` : 'Included'})
+                          </span>
+                        </p>
                       )}
-                      {item.order.personalization?.embroideryStyle !== 'none' && (
-                        <span className="px-2 py-0.5 rounded-full bg-terra-50 text-terra-700 text-[10px] font-medium capitalize">
-                          {item.order.personalization?.embroideryStyle} embroidery
-                        </span>
-                      )}
-                      {item.order.personalization?.necklineType && (
-                        <span className="px-2 py-0.5 rounded-full bg-earth-100 text-earth-600 text-[10px] font-medium capitalize">
-                          {item.order.personalization.necklineType}
-                        </span>
-                      )}
-                      {item.order.personalization?.sleeveLength && (
-                        <span className="px-2 py-0.5 rounded-full bg-earth-100 text-earth-600 text-[10px] font-medium capitalize">
-                          {item.order.personalization.sleeveLength} sleeve
-                        </span>
-                      )}
-                      {item.order.personalization?.addLining && (
-                        <span className="px-2 py-0.5 rounded-full bg-kente-50 text-kente-700 text-[10px] font-medium">
-                          + Lining
-                        </span>
-                      )}
-                      {(item.order.personalization?.accessories?.length ?? 0) > 0 && (
-                        <span className="px-2 py-0.5 rounded-full bg-savanna-50 text-savanna-700 text-[10px] font-medium">
-                          +{item.order.personalization!.accessories.length} accessory
-                        </span>
+                      {item.order.personalization?.specialRequests && (
+                        <p className="italic text-earth-400 mt-1">
+                          Request: "{item.order.personalization.specialRequests}"
+                        </p>
                       )}
                     </div>
 
@@ -295,8 +318,8 @@ export default function Cart() {
 
               {/* Per-item breakdown */}
               <div className="space-y-3 mb-5">
-                {items.map((item, index) => {
-                  const style = OUTFIT_STYLES.find((s) => s.id === item.order.style);
+                {items.map((item: CartItem, index: number) => {
+                  const style = item.order.customStyleInfo || OUTFIT_STYLES.find((s) => s.id === item.order.style);
                   return (
                     <div key={item.id} className="flex justify-between text-sm">
                       <span className="text-earth-600 truncate mr-2">
@@ -350,6 +373,26 @@ export default function Cart() {
 
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {activeImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 cursor-pointer"
+          onClick={() => setActiveImageUrl(null)}
+        >
+          <button
+            className="absolute top-6 right-6 text-white/80 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+            onClick={() => setActiveImageUrl(null)}
+          >
+            <X size={24} />
+          </button>
+          <img
+            src={activeImageUrl}
+            alt="Enlarged style preview"
+            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl animate-in zoom-in-95 duration-200"
+          />
+        </div>
+      )}
     </div>
   );
 }

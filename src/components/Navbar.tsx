@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag, Search } from 'lucide-react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logoutUser } from '../store/slices/authSlice';
 
 const navLinks = [
   { label: 'Shop All', href: '/catalog' },
   { label: 'New Arrivals', href: '/#new-arrivals' },
   { label: 'Customize', href: '/#customize' },
   { label: 'Collections', href: '/#categories' },
-  { label: 'Heritage', href: '/#heritage' },
+  { label: 'My Orders', href: '/my-orders' },
 ];
 
 function useCartCount() {
@@ -48,11 +50,19 @@ export default function Navbar() {
   const location = useLocation();
   const cartCount = useCartCount();
 
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    setIsOpen(false);
+  };
 
   const isHome = location.pathname === '/';
 
@@ -101,12 +111,35 @@ export default function Navbar() {
             </Link>
             <Link
               to="/cart"
-              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative"
+              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-2"
               aria-label="Cart"
             >
               <ShoppingBag size={20} />
               <CartBadge />
             </Link>
+
+            {user ? (
+              <div className="flex items-center gap-4 pl-4 border-l border-earth-200">
+                <span className="font-body text-xs font-semibold tracking-wider text-terra-600 uppercase">
+                  Hello, {user.firstName || user.full_name || 'Guest'}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 border border-night-950 text-night-950 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-night-950 hover:text-earth-50 rounded-lg"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="pl-4 border-l border-earth-200">
+                <Link
+                  to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+                  className="px-4 py-2 bg-night-950 text-earth-50 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-terra-700 hover:shadow-md rounded-lg"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -123,7 +156,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       <div
         className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+          isOpen ? 'max-h-[450px] opacity-100' : 'max-h-0 opacity-0'
         }`}
       >
         <div className="bg-earth-50/98 backdrop-blur-lg border-t border-earth-200">
@@ -152,6 +185,30 @@ export default function Navbar() {
                 <CartBadge />
               </Link>
             </div>
+
+            {user ? (
+              <div className="pt-4 border-t border-earth-200 flex flex-col gap-3">
+                <span className="font-body text-xs font-semibold tracking-wider text-terra-600 uppercase">
+                  Hello, {user.firstName || user.full_name || 'Guest'}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-3 border border-night-950 text-night-950 font-body font-semibold text-xs tracking-wider uppercase text-center rounded-xl"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-earth-200">
+                <Link
+                  to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full py-3 bg-night-950 text-earth-50 font-body font-semibold text-xs tracking-wider uppercase text-center rounded-xl"
+                >
+                  Sign In
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>

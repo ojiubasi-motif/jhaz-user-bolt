@@ -7,4 +7,16 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    proxy: {
+      // Proxy all /api requests to the gateway during development.
+      // This makes cookies same-origin (no cross-origin SameSite issues).
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        // Forward cookies (needed for httpOnly refresh token)
+        cookieDomainRewrite: 'localhost',
+      },
+    },
+  },
 });
