@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ShoppingBag, Search } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logoutUser } from '../store/slices/authSlice';
+import logo from '../assets/logo.png';
 
 const navLinks = [
   { label: 'Shop All', href: '/catalog' },
@@ -84,11 +85,12 @@ export default function Navbar() {
       <div className="section-container">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-night-950 group-hover:text-terra-700 transition-colors duration-300">
-              Jhaz-imprints
-            </span>
-            <span className="hidden sm:block w-1.5 h-1.5 rounded-full bg-terra-500 mt-1" />
+          <Link to="/" className="relative w-20 sm:w-24 h-16 sm:h-20 flex items-center group">
+            <img 
+              src={logo} 
+              alt="Jhaz-imprints Logo" 
+              className="absolute top-2 sm:top-3 left-0 h-20 w-20 sm:h-24 sm:w-24 object-contain z-50 transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
+            />
           </Link>
 
           {/* Desktop Nav */}

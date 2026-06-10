@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Twitter, Youtube, MapPin, Mail, Phone } from 'lucide-react';
+import logo from '../assets/logo.png';
 
 const footerLinks = {
   shop: [
@@ -39,10 +40,12 @@ export default function Footer() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2 space-y-5">
-            <Link to="/" className="inline-block">
-              <span className="font-display text-3xl font-bold text-earth-50">
-                Jhaz-imprints
-              </span>
+            <Link to="/" className="inline-block group">
+              <img 
+                src={logo} 
+                alt="Jhaz-imprints Logo" 
+                className="h-20 w-20 object-contain brightness-0 invert transition-transform duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
+              />
             </Link>
             <p className="text-sm leading-relaxed max-w-xs">
               Handcrafted African fashion, made to your measure. Every piece
