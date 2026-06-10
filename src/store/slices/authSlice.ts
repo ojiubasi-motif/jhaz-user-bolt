@@ -1,7 +1,18 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import type { LoginData, RegisterData } from '@jhaz-imprints/shared';
 import { fetchApi } from '../../lib/apiClient';
 import { tokenStore } from '../../lib/tokenStore';
+
+export interface LoginData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
 
 interface User {
   id: string;
