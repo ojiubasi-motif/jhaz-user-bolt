@@ -139,7 +139,7 @@ export default function Cart() {
   // ── Empty state ────────────────────────────────────────────────────────
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20 flex flex-col items-center justify-center px-4 text-center">
+      <div className="min-h-screen bg-earth-50 pt-20 sm:pt-24 flex flex-col items-center justify-center px-4 text-center">
         <div className="w-24 h-24 rounded-full bg-earth-100 flex items-center justify-center mb-6">
           <ShoppingBag size={40} className="text-earth-300" />
         </div>
@@ -157,7 +157,7 @@ export default function Cart() {
 
   // ── Filled cart ────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20">
+    <div className="min-h-screen bg-earth-50 pt-20 sm:pt-24">
       {/* Header */}
       <div className="bg-gradient-to-br from-night-950 via-night-900 to-night-950 text-earth-50 py-10 sm:py-14">
         <div className="section-container">
@@ -311,7 +311,7 @@ export default function Cart() {
 
           {/* ── Order summary sidebar ───────────────────────────────────── */}
           <div className="lg:w-80 shrink-0">
-            <div className="bg-white rounded-2xl border border-earth-200/60 shadow-sm p-6 sticky top-28">
+            <div className="bg-white rounded-2xl border border-earth-200/60 shadow-sm p-6 sticky top-32">
               <h2 className="font-display text-lg font-bold text-night-950 mb-5">
                 Order Total
               </h2>

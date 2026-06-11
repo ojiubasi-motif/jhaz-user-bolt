@@ -630,7 +630,7 @@ export default function Order() {
   };
 
   return (
-    <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20">
+    <div className="min-h-screen bg-earth-50 pt-20 sm:pt-24">
       {/* Page header */}
       <div className="bg-gradient-to-br from-night-950 via-night-900 to-night-950 text-earth-50 py-10 sm:py-14">
         <div className="section-container text-center">
@@ -642,7 +642,7 @@ export default function Order() {
       </div>
 
       {/* Progress bar — sticky below navbar */}
-      <div className="sticky top-16 sm:top-20 z-30 bg-white/95 backdrop-blur-md border-b border-earth-200/80 shadow-sm">
+      <div className="sticky top-20 sm:top-24 z-30 bg-white/95 backdrop-blur-md border-b border-earth-200/80 shadow-sm">
         <div className="section-container">
           <ProgressBar currentStep={currentStep} />
         </div>

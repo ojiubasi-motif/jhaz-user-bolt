@@ -209,7 +209,7 @@ export default function Catalog() {
   // helper functions.
 
   return (
-    <div className="min-h-screen bg-earth-50 pt-16 sm:pt-20">
+    <div className="min-h-screen bg-earth-50 pt-20 sm:pt-24">
       {/* Page header */}
       <div className="section-container pt-8 pb-6 animate-fade-up">
         <span className="text-terra-600 font-body text-sm font-semibold tracking-widest uppercase">
@@ -256,8 +256,8 @@ export default function Catalog() {
         )}
       </div>
 
-      {/* Sticky search bar — stays below the fixed navbar (top-16/top-20) */}
-      <div className="sticky top-16 sm:top-20 z-30 bg-earth-50/95 backdrop-blur-md border-b border-earth-200/80 shadow-sm">
+      {/* Sticky search bar — stays below the fixed navbar (top-20/top-24) */}
+      <div className="sticky top-20 sm:top-24 z-30 bg-earth-50/95 backdrop-blur-md border-b border-earth-200/80 shadow-sm">
         <div className="section-container py-3">
           <div className="flex items-center gap-3">
             {/* Search input */}
@@ -343,7 +343,7 @@ export default function Catalog() {
 
           {/* Desktop sidebar — sticky, vertically scrollable when content overflows */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <div className="sticky top-[calc(5rem+3.5rem)] bg-white rounded-2xl border border-earth-200/60 shadow-sm">
+            <div className="sticky top-[calc(6rem+3.5rem)] bg-white rounded-2xl border border-earth-200/60 shadow-sm">
               {/* Sidebar header is outside the scroll container so it stays visible */}
               <div className="flex items-center justify-between px-6 pt-6 pb-3 border-b border-earth-100">
                 <h3 className="font-display text-lg font-bold text-night-950">Filters</h3>
