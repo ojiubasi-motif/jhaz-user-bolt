@@ -5,7 +5,7 @@ import { tokenStore } from '../lib/tokenStore';
 
 export default function AuthInitializer({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
-  const { expiresAt } = useAppSelector((state) => state.auth);
+  const { expiresAt, initialized } = useAppSelector((state) => state.auth);
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
@@ -76,6 +76,39 @@ export default function AuthInitializer({ children }: { children: React.ReactNod
   useEffect(() => {
     scheduleRefresh();
   }, [expiresAt]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen bg-earth-50 flex flex-col items-center justify-center px-4 relative overflow-hidden">
+        {/* Soft decorative background gradients */}
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-terra-100/30 blur-3xl -top-48 -left-48" />
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-kente-100/20 blur-3xl -bottom-48 -right-48" />
+
+        <div className="relative flex flex-col items-center space-y-6 max-w-sm text-center animate-fade-in">
+          {/* Circular Loader with brand accents */}
+          <div className="relative w-20 h-20">
+            {/* Outer static ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-earth-200/60" />
+            {/* Spinning active ring */}
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-terra-600 border-r-kente-500 animate-spin" />
+            {/* Inner aesthetic accents */}
+            <div className="absolute inset-2 rounded-full border border-dashed border-earth-300 animate-[spin_10s_linear_infinite]" />
+          </div>
+
+          {/* Brand & Loading Info */}
+          <div className="space-y-2">
+            <h2 className="font-display text-2xl font-extrabold tracking-wider text-night-950 uppercase">
+              Jhaz Imprints
+            </h2>
+            <div className="h-[1px] w-12 bg-gradient-to-r from-terra-600 to-kente-500 mx-auto" />
+            <p className="text-sm text-earth-500 font-medium animate-pulse tracking-wide mt-2">
+              Verifying secure session...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }

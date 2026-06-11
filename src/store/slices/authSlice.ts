@@ -28,6 +28,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   expiresAt: number | null; // Token expiry time (ms since epoch)
+  initialized: boolean;
 }
 
 const initialState: AuthState = {
@@ -35,6 +36,7 @@ const initialState: AuthState = {
   isLoading: true,
   error: null,
   expiresAt: null,
+  initialized: false,
 };
 
 /**
@@ -204,9 +206,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = action.payload.user;
         state.expiresAt = action.payload.expiresAt;
+        state.initialized = true;
       })
       .addCase(loadProfile.rejected, (state) => {
         state.isLoading = false;
+        state.initialized = true;
         // No user data
       })
 
