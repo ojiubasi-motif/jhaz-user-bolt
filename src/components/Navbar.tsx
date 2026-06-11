@@ -85,11 +85,11 @@ export default function Navbar() {
       <div className="section-container">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center h-full group">
+          <Link to="/" className="relative w-20 sm:w-24 h-16 sm:h-20 flex items-center group">
             <img 
               src={logo} 
               alt="Jhaz-imprints Logo" 
-              className="h-14 w-auto sm:h-18 sm:w-auto object-contain transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
+              className="absolute top-0 left-0 h-20 w-20 sm:h-24 sm:w-24 object-contain z-50 transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
             />
           </Link>
 
