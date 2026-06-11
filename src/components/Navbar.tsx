@@ -89,7 +89,7 @@ export default function Navbar() {
             <img 
               src={logo} 
               alt="Jhaz-imprints Logo" 
-              className="h-12 w-12 sm:h-16 sm:w-16 object-contain transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
+              className="h-14 w-auto sm:h-18 sm:w-auto object-contain transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
             />
           </Link>
 
