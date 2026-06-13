@@ -23,7 +23,7 @@ export default function Hero() {
               </span>
             </div>
 
-            <h1 className="heading-xl animate-fade-up delay-100">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black leading-[1.15] tracking-tight animate-fade-up delay-100">
               <span className="text-night-950">Rooted in</span>
               <br />
               <span className="text-gradient italic">Heritage.</span>
