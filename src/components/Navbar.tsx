@@ -75,102 +75,104 @@ export default function Navbar() {
     ) : null;
 
   return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled || !isHome
-          ? 'bg-earth-50/95 backdrop-blur-md shadow-sm'
-          : 'bg-transparent'
-      }`}
-    >
-      <div className="section-container">
-        <div className="flex items-center justify-between h-20 sm:h-24">
-          {/* Logo */}
-          <Link to="/" className="flex items-center h-full group">
-            <img 
-              src={logo} 
-              alt="Jhaz-imprints Logo" 
-              className="h-16 w-16 sm:h-20 sm:w-20 object-contain transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
-            />
-          </Link>
-
-          {/* Desktop Nav */}
-          <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.href}
-                className="font-body text-sm font-medium tracking-wide text-night-800 hover:text-terra-600 transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-terra-500 after:transition-all after:duration-300 hover:after:w-full"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* Desktop Actions */}
-          <div className="hidden lg:flex items-center gap-4">
-            <Link to="/catalog" className="p-2 text-night-800 hover:text-terra-600 transition-colors" aria-label="Search">
-              <Search size={20} />
-            </Link>
-            <Link
-              to="/cart"
-              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-2"
-              aria-label="Cart"
-            >
-              <ShoppingBag size={20} />
-              <CartBadge />
+    <>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled || !isHome
+            ? 'bg-earth-50/95 backdrop-blur-md shadow-sm'
+            : 'bg-transparent'
+        }`}
+      >
+        <div className="section-container">
+          <div className="flex items-center justify-between h-20 sm:h-24">
+            {/* Logo */}
+            <Link to="/" className="flex items-center h-full group">
+              <img 
+                src={logo} 
+                alt="Jhaz-imprints Logo" 
+                className="h-16 w-16 sm:h-20 sm:w-20 object-contain transition-all duration-300 transform-gpu will-change-transform [backface-visibility:hidden] group-hover:scale-105" 
+              />
             </Link>
 
-            {user ? (
-              <div className="flex items-center gap-4 pl-4 border-l border-earth-200">
-                <span className="font-body text-xs font-semibold tracking-wider text-terra-600 uppercase">
-                  Hello, {user.firstName || user.full_name || 'Guest'}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 border border-night-950 text-night-950 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-night-950 hover:text-earth-50 rounded-lg"
-                >
-                  Sign Out
-                </button>
-              </div>
-            ) : (
-              <div className="pl-4 border-l border-earth-200">
+            {/* Desktop Nav */}
+            <div className="hidden lg:flex items-center gap-8">
+              {navLinks.map((link) => (
                 <Link
-                  to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
-                  className="px-4 py-2 bg-night-950 text-earth-50 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-terra-700 hover:shadow-md rounded-lg"
+                  key={link.label}
+                  to={link.href}
+                  className="font-body text-sm font-medium tracking-wide text-night-800 hover:text-terra-600 transition-colors duration-300 relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-0 after:h-[2px] after:bg-terra-500 after:transition-all after:duration-300 hover:after:w-full"
                 >
-                  Sign In
+                  {link.label}
                 </Link>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
 
-          {/* Mobile Actions & Menu Toggle */}
-          <div className="lg:hidden flex items-center gap-2">
-            <Link
-              to="/catalog"
-              className="p-2 text-night-800 hover:text-terra-600 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
-              aria-label="Search"
-            >
-              <Search size={20} />
-            </Link>
-            <Link
-              to="/cart"
-              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-1 flex items-center justify-center min-w-[44px] min-h-[44px]"
-              aria-label="Cart"
-            >
-              <ShoppingBag size={20} />
-              <CartBadge />
-            </Link>
-            <button
-              className="p-2 text-night-950 flex items-center justify-center min-w-[44px] min-h-[44px]"
-              onClick={() => setIsOpen(!isOpen)}
-              aria-label="Toggle menu"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center gap-4">
+              <Link to="/catalog" className="p-2 text-night-800 hover:text-terra-600 transition-colors" aria-label="Search">
+                <Search size={20} />
+              </Link>
+              <Link
+                to="/cart"
+                className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-2"
+                aria-label="Cart"
+              >
+                <ShoppingBag size={20} />
+                <CartBadge />
+              </Link>
+
+              {user ? (
+                <div className="flex items-center gap-4 pl-4 border-l border-earth-200">
+                  <span className="font-body text-xs font-semibold tracking-wider text-terra-600 uppercase">
+                    Hello, {user.firstName || user.full_name || 'Guest'}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 border border-night-950 text-night-950 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-night-950 hover:text-earth-50 rounded-lg"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <div className="pl-4 border-l border-earth-200">
+                  <Link
+                    to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+                    className="px-4 py-2 bg-night-950 text-earth-50 font-body font-semibold text-xs tracking-wider uppercase transition-all duration-300 hover:bg-terra-700 hover:shadow-md rounded-lg"
+                  >
+                    Sign In
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Actions & Menu Toggle */}
+            <div className="lg:hidden flex items-center gap-2">
+              <Link
+                to="/catalog"
+                className="p-2 text-night-800 hover:text-terra-600 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+                aria-label="Search"
+              >
+                <Search size={20} />
+              </Link>
+              <Link
+                to="/cart"
+                className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-1 flex items-center justify-center min-w-[44px] min-h-[44px]"
+                aria-label="Cart"
+              >
+                <ShoppingBag size={20} />
+                <CartBadge />
+              </Link>
+              <button
+                className="p-2 text-night-950 flex items-center justify-center min-w-[44px] min-h-[44px]"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label="Toggle menu"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </nav>
 
       {/* Mobile Drawer */}
       <div
@@ -239,6 +241,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-    </nav>
+    </>
   );
 }

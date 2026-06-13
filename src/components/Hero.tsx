@@ -68,7 +68,7 @@ export default function Hero() {
 
           {/* Right: Hero Image */}
           <div className="relative animate-fade-up delay-200">
-            <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] aspect-[3/4] max-w-md mx-auto lg:ml-auto">
+            <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] lg:h-[500px] xl:h-[600px] max-w-md mx-auto lg:ml-auto">
               {/* Main image */}
               <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl">
                 <img

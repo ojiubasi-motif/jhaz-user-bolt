@@ -22,10 +22,18 @@ import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
 
 function ScrollToTop() {
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
   useEffect(() => {
+    if (hash) {
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+    }
     window.scrollTo(0, 0);
-  }, [pathname, search]);
+  }, [pathname, search, hash]);
   return null;
 }
 

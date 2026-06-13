@@ -2177,7 +2177,7 @@ function StepOrderSummary({
           <Tag size={14} className="text-kente-600" />
           <span className="text-sm font-semibold text-night-950">Promo Code</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             placeholder="Enter promo code"
@@ -2185,7 +2185,7 @@ function StepOrderSummary({
             onChange={(e) => setPromoCode(e.target.value)}
             className="flex-1 px-4 py-2.5 border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
           />
-          <button onClick={handleApplyPromo} className="px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors min-h-[44px]">
+          <button onClick={handleApplyPromo} className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors min-h-[44px]">
             Apply
           </button>
         </div>
