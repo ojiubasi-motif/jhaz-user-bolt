@@ -100,7 +100,7 @@ export default function Login() {
                   placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                     formErrors.email
                       ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                       : 'border-earth-200 focus:border-terra-500 focus:ring-1 focus:ring-terra-500'
@@ -127,7 +127,7 @@ export default function Login() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                     formErrors.password
                       ? 'border-red-400 focus:border-red-500 focus:ring-1 focus:ring-red-500'
                       : 'border-earth-200 focus:border-terra-500 focus:ring-1 focus:ring-terra-500'

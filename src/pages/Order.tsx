@@ -649,7 +649,7 @@ export default function Order() {
       </div>
 
       {/* Step content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 pb-24 md:pb-8">
         <div className="bg-white rounded-2xl shadow-sm border border-earth-200/60 p-6 sm:p-8">
           {currentStep === 1 && (
             <StepStyleSelection
@@ -744,9 +744,27 @@ export default function Order() {
 // ═══════════════════════════════════════════════════════
 
 function ProgressBar({ currentStep }: { currentStep: number }) {
+  const currentStepInfo = STEPS.find((s) => s.id === currentStep);
   return (
     <div className="w-full py-4 px-1">
-      <div className="relative">
+      {/* Mobile progress indicator */}
+      <div className="md:hidden flex flex-col items-center">
+        <div className="text-[11px] font-semibold text-earth-500 uppercase tracking-wider">
+          Step {currentStep} of {STEPS.length}
+        </div>
+        <div className="text-sm font-bold text-night-950 mt-0.5">
+          {currentStepInfo?.name}
+        </div>
+        <div className="w-full bg-earth-200 h-1.5 rounded-full mt-2 overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-terra-600 to-kente-500 transition-all duration-500"
+            style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Desktop progress timeline */}
+      <div className="hidden md:block relative">
         {/* Track bg */}
         <div className="absolute top-4 left-0 right-0 h-0.5 bg-earth-200 rounded-full" />
         {/* Track fill */}
@@ -807,21 +825,24 @@ function StepNav({
   showBack?: boolean;
   nextClassName?: string;
 }) {
+  const hasBack = showBack && onBack;
   return (
-    <div className="flex justify-between pt-6 border-t border-earth-100 mt-6">
-      {showBack && onBack ? (
+    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-earth-150 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:relative md:bg-transparent md:border-t-0 md:border-0 md:shadow-none md:p-0 md:mt-8 flex items-center gap-3 w-full">
+      {hasBack && (
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors"
+          className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors min-h-[44px]"
         >
           <ChevronLeft size={16} />
           Back
         </button>
-      ) : <span />}
+      )}
       <button
         onClick={onNext}
         disabled={nextDisabled}
-        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+        className={`flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 min-h-[44px] ${
+          !hasBack ? 'w-full md:w-auto' : ''
+        } ${
           nextDisabled
             ? 'bg-earth-200 text-earth-400 cursor-not-allowed'
             : nextClassName || 'btn-primary'
@@ -1034,7 +1055,7 @@ function StepFabricSelection({
           placeholder="Any specific fabric preferences, patterns, or instructions..."
           value={notes}
           onChange={(e) => handleNotes(e.target.value)}
-          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none"
+          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none"
         />
       </div>
 
@@ -1316,7 +1337,7 @@ function StepMeasurements({
 
   const isValid = form.chest > 0 && form.waist > 0 && form.hips > 0 && form.height > 0 && form.shoulderWidth > 0;
 
-  const fields: { key: keyof Omit<Measurements, 'saveForFuture'>; label: string }[] = [
+  const fields: { key: 'chest' | 'waist' | 'hips' | 'height' | 'shoulderWidth'; label: string }[] = [
     { key: 'chest', label: 'Chest' },
     { key: 'waist', label: 'Waist' },
     { key: 'hips', label: 'Hips' },
@@ -1391,7 +1412,7 @@ function StepMeasurements({
               <select
                 value={selectedProfileId || ''}
                 onChange={(e) => handleProfileChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                className="w-full px-3 py-2.5 bg-white border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
               >
                 {savedProfiles.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -1409,7 +1430,7 @@ function StepMeasurements({
                   placeholder="e.g. Slim fit, Groom"
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                  className="w-full px-3 py-2.5 bg-white border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
                 />
               </div>
             </div>
@@ -1423,7 +1444,7 @@ function StepMeasurements({
                   placeholder="e.g. My Default Profile"
                   value={newProfileName}
                   onChange={(e) => setNewProfileName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                  className="w-full px-3 py-2.5 bg-white border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
                 />
               </div>
             </div>
@@ -1474,22 +1495,46 @@ function StepMeasurements({
                 {MEASUREMENT_GUIDES[key]}
               </p>
             )}
-            <input
-              type="number"
-              min="0"
-              step="0.5"
-              placeholder={`Enter ${label.toLowerCase()}`}
-              value={form[key] || ''}
-              onChange={(e) => handleChange(key, parseFloat(e.target.value) || 0)}
-              className="w-full px-4 py-2.5 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all disabled:bg-earth-100 disabled:text-earth-500 disabled:cursor-not-allowed"
-            />
+            <div className="flex items-center w-full border border-earth-200 rounded-xl bg-white focus-within:border-terra-500 focus-within:ring-1 focus-within:ring-terra-500 transition-all overflow-hidden shadow-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  const val = Math.max(0, (form[key] || 0) - 0.5);
+                  handleChange(key, val);
+                }}
+                className="w-11 h-11 flex items-center justify-center text-earth-600 hover:text-terra-600 active:bg-earth-100 border-r border-earth-150 transition-colors select-none font-bold text-lg"
+                aria-label={`Decrease ${label}`}
+              >
+                —
+              </button>
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                placeholder="0.0"
+                value={form[key] || ''}
+                onChange={(e) => handleChange(key, parseFloat(e.target.value) || 0)}
+                className="flex-1 text-center py-2.5 px-3 text-base font-body text-night-950 bg-transparent focus:outline-none border-none placeholder-earth-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const val = (form[key] || 0) + 0.5;
+                  handleChange(key, val);
+                }}
+                className="w-11 h-11 flex items-center justify-center text-earth-600 hover:text-terra-600 active:bg-earth-100 border-l border-earth-150 transition-colors select-none font-bold text-lg"
+                aria-label={`Increase ${label}`}
+              >
+                +
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       {/* Visual guide mini */}
       <div className="bg-earth-50 rounded-xl p-4 border border-earth-200">
-        <div className="grid grid-cols-5 gap-2 text-center text-[10px]">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center text-[10px]">
           {['C', 'W', 'H', 'Ht', 'S'].map((letter, i) => (
             <div key={letter} className="flex flex-col items-center">
               <div className="w-8 h-8 rounded-full bg-terra-100 flex items-center justify-center mb-1">
@@ -1580,21 +1625,21 @@ function StepPersonalization({
           placeholder="Specify neckline preferences, sleeve preferences, style accents, lining, or any other notes for our tailors..."
           value={form.specialRequests}
           onChange={(e) => handleChange('specialRequests', e.target.value)}
-          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none shadow-sm"
+          className="w-full px-4 py-3 border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all resize-none shadow-sm"
         />
       </div>
 
-      <div className="flex justify-between pt-6 border-t border-earth-100 mt-6">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-earth-150 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:relative md:bg-transparent md:border-t-0 md:border-0 md:shadow-none md:p-0 md:mt-8 flex items-center gap-3 w-full">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors"
+          className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors min-h-[44px]"
         >
           <ChevronLeft size={16} />
           Back
         </button>
         <button
           onClick={onAddToCart}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold btn-primary"
+          className="flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold btn-primary min-h-[44px]"
         >
           <ShoppingBag size={16} />
           Add to Cart
@@ -1634,7 +1679,7 @@ function StepDelivery({
 
   const isValid = form.fullName.trim() !== '' && form.phoneNumber.trim() !== '' && form.address.trim() !== '' && form.city.trim() !== '' && form.state !== '';
 
-  const inputCls = 'w-full px-4 py-2.5 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all';
+  const inputCls = 'w-full px-4 py-2.5 border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all';
 
   return (
     <div className="space-y-6">
@@ -1865,17 +1910,17 @@ function StepCart({
               <div className="flex flex-col gap-2 shrink-0">
                 <button
                   onClick={() => onRemove(item.id)}
-                  className="p-1.5 rounded-lg text-earth-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-earth-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                   title="Remove item"
                 >
-                  <X size={16} />
+                  <X size={18} />
                 </button>
                 <button
                   onClick={() => onEdit(item)}
-                  className="p-1.5 rounded-lg text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-colors"
+                  className="w-11 h-11 flex items-center justify-center rounded-xl text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-colors"
                   title="Edit customization"
                 >
-                  <Pencil size={15} />
+                  <Pencil size={18} />
                 </button>
               </div>
             </div>
@@ -1890,17 +1935,17 @@ function StepCart({
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-2 border-t border-earth-100">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-earth-150 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:relative md:bg-transparent md:border-t-0 md:border-0 md:shadow-none md:p-0 md:mt-8 flex items-center gap-3 w-full">
         <button
           onClick={onAddAnother}
-          className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors"
+          className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors min-h-[44px]"
         >
           <Package size={16} />
-          Add Another Outfit
+          <span className="truncate">Add Outfit</span>
         </button>
         <button
           onClick={onCheckout}
-          className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all"
+          className="flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all min-h-[44px]"
         >
           Checkout
           <ChevronRight size={16} />
@@ -2072,7 +2117,7 @@ function StepOrderSummary({
                 {item.order.measurements && (
                   <div className="sm:col-span-2">
                     <span className="block text-[10px] text-earth-400 uppercase font-semibold mb-1">Measurements</span>
-                    <div className="grid grid-cols-5 gap-2 bg-white rounded-lg p-2.5 border border-earth-200/60 text-xs">
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 bg-white rounded-lg p-2.5 border border-earth-200/60 text-xs text-center sm:text-left">
                       <div><span className="text-earth-400 block text-[9px] uppercase">Chest</span><span className="font-bold text-night-950">{item.order.measurements.chest}cm</span></div>
                       <div><span className="text-earth-400 block text-[9px] uppercase">Waist</span><span className="font-bold text-night-950">{item.order.measurements.waist}cm</span></div>
                       <div><span className="text-earth-400 block text-[9px] uppercase">Hips</span><span className="font-bold text-night-950">{item.order.measurements.hips}cm</span></div>
@@ -2138,9 +2183,9 @@ function StepOrderSummary({
             placeholder="Enter promo code"
             value={promoCode}
             onChange={(e) => setPromoCode(e.target.value)}
-            className="flex-1 px-4 py-2.5 border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+            className="flex-1 px-4 py-2.5 border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
           />
-          <button onClick={handleApplyPromo} className="px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors">
+          <button onClick={handleApplyPromo} className="px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-semibold text-night-950 hover:border-terra-400 transition-colors min-h-[44px]">
             Apply
           </button>
         </div>
@@ -2212,11 +2257,11 @@ function StepOrderSummary({
         </div>
       )}
 
-      <div className="flex justify-between pt-2">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-earth-150 z-30 shadow-[0_-4px_12px_rgba(0,0,0,0.05)] md:relative md:bg-transparent md:border-t-0 md:border-0 md:shadow-none md:p-0 md:mt-8 flex items-center gap-3 w-full">
         <button
           onClick={onBack}
           disabled={isProcessing}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors disabled:opacity-50"
+          className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-earth-300 text-sm font-medium text-night-900 hover:border-terra-400 transition-colors disabled:opacity-50 min-h-[44px]"
         >
           <ChevronLeft size={16} />
           Back
@@ -2225,7 +2270,7 @@ function StepOrderSummary({
         {!user ? (
           <button
             onClick={() => navigate(`/login?redirect=${encodeURIComponent('/order?step=7')}`)}
-            className="px-6 py-2.5 rounded-xl text-sm font-bold bg-terra-600 hover:bg-terra-700 text-white transition-all shadow-sm"
+            className="flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-terra-600 hover:bg-terra-700 text-white transition-all shadow-sm min-h-[44px]"
           >
             Log In to Continue
           </button>
@@ -2233,17 +2278,17 @@ function StepOrderSummary({
           <button
             onClick={onNext}
             disabled={isProcessing}
-            className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-60 min-w-[200px]"
+            className="flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-60 min-h-[44px]"
           >
             {isProcessing ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
-                {createdOrders.length > 0 ? "Initializing Payment..." : "Creating Order..."}
+                <Loader2 size={16} className="animate-spin text-white" />
+                {createdOrders.length > 0 ? "Initializing..." : "Creating..."}
               </>
             ) : isOnline ? (
-              <>Pay Now with Paystack ({formatNaira(grandTotal)})</>
+              <>Pay <span className="hidden sm:inline">Now with Paystack</span> ({formatNaira(grandTotal)})</>
             ) : (
-              `Save Order & Pay Later (${formatNaira(grandTotal)})`
+              <>Save <span className="hidden sm:inline">Order</span> & Pay Later ({formatNaira(grandTotal)})</>
             )}
           </button>
         )}

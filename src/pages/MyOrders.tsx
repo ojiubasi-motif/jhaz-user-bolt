@@ -409,7 +409,7 @@ export default function MyOrders() {
                                     <Ruler size={12} className="text-terra-600" />
                                     Measurements (Inches)
                                   </p>
-                                  <div className="grid grid-cols-5 gap-2 text-earth-600 text-center">
+                                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-earth-600 text-center">
                                     <div><p className="text-[10px] text-earth-400">Chest</p><p className="font-bold text-night-900">{item.measurement.chest}"</p></div>
                                     <div><p className="text-[10px] text-earth-400">Waist</p><p className="font-bold text-night-900">{item.measurement.waist}"</p></div>
                                     <div><p className="text-[10px] text-earth-400">Hips</p><p className="font-bold text-night-900">{item.measurement.hip}"</p></div>

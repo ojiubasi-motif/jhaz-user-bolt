@@ -97,7 +97,7 @@ export default function Register() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Names row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-night-900 mb-1.5" htmlFor="firstName">
                   First Name
@@ -110,7 +110,7 @@ export default function Register() {
                     placeholder="First"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                    className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                       formErrors.firstName ? 'border-red-400 focus:border-red-500 focus:ring-1' : 'border-earth-200 focus:border-terra-500 focus:ring-1'
                     }`}
                   />
@@ -132,7 +132,7 @@ export default function Register() {
                     placeholder="Last"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                    className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                       formErrors.lastName ? 'border-red-400 focus:border-red-500 focus:ring-1' : 'border-earth-200 focus:border-terra-500 focus:ring-1'
                     }`}
                   />
@@ -156,7 +156,7 @@ export default function Register() {
                   placeholder="name@domain.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                     formErrors.email ? 'border-red-400 focus:border-red-500 focus:ring-1' : 'border-earth-200 focus:border-terra-500 focus:ring-1'
                   }`}
                 />
@@ -168,7 +168,7 @@ export default function Register() {
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-semibold text-night-900 mb-1.5" htmlFor="password">
+              <label className="block text-xs font-semibold text-night-950 mb-1.5" htmlFor="password">
                 Password
               </label>
               <div className="relative">
@@ -179,7 +179,7 @@ export default function Register() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
+                  className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-base font-body text-night-950 placeholder-earth-300 focus:outline-none transition-all ${
                     formErrors.password ? 'border-red-400 focus:border-red-500 focus:ring-1' : 'border-earth-200 focus:border-terra-500 focus:ring-1'
                   }`}
                 />

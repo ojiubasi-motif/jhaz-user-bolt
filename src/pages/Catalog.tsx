@@ -268,7 +268,7 @@ export default function Catalog() {
                 placeholder="Search dresses, fabrics, styles..."
                 value={filters.search}
                 onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                className="w-full pl-11 pr-10 py-2.5 bg-white border border-earth-200 rounded-xl text-sm font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
+                className="w-full pl-11 pr-10 py-2.5 bg-white border border-earth-200 rounded-xl text-base font-body text-night-950 placeholder-earth-400 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
               />
               {filters.search && (
                 <button
@@ -386,10 +386,10 @@ export default function Catalog() {
             )}
  
             {loading ? (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="animate-pulse bg-white rounded-xl overflow-hidden border border-earth-100">
-                    <div className="aspect-[3/4] bg-earth-200" />
+                    <div className="aspect-square md:aspect-[4/3] bg-earth-200" />
                     <div className="p-4 space-y-2">
                       <div className="h-3 bg-earth-200 rounded w-1/3" />
                       <div className="h-4 bg-earth-200 rounded w-3/4" />
@@ -410,7 +410,7 @@ export default function Catalog() {
                 </button>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -420,6 +420,21 @@ export default function Catalog() {
         </div>
       </div>
  
+      {/* Floating mobile filter toggle */}
+      <button
+        onClick={() => setMobileFiltersOpen(true)}
+        className="lg:hidden fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3.5 bg-terra-600 text-white rounded-full shadow-2xl hover:bg-terra-700 transition-all font-semibold text-sm hover:scale-105 active:scale-95"
+        aria-label="Filter products"
+      >
+        <SlidersHorizontal size={18} />
+        Filter
+        {activeFilterCount > 0 && (
+          <span className="w-5 h-5 bg-white text-terra-700 text-[10px] font-extrabold rounded-full flex items-center justify-center">
+            {activeFilterCount}
+          </span>
+        )}
+      </button>
+
       {/* Mobile Filter Drawer */}
       {mobileFiltersOpen && (
         <>
@@ -570,9 +585,9 @@ function ProductCard({ product }: { product: Product }) {
     : 'bg-night-950/80 text-earth-50';
 
   return (
-    <div className="group flex flex-col rounded-xl overflow-hidden bg-white border border-earth-100 shadow-sm card-hover">
+    <div className="group flex flex-col rounded-xl overflow-hidden bg-white border border-earth-100 shadow-sm card-hover h-full">
       {/* Image */}
-      <div className="relative aspect-[3/4] overflow-hidden bg-earth-100">
+      <div className="relative aspect-square md:aspect-[4/3] overflow-hidden bg-earth-100">
         <img
           src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
           alt={product.name}
@@ -601,8 +616,8 @@ function ProductCard({ product }: { product: Product }) {
           {product.shipping_badge}
         </span>
 
-        {/* Hover overlay action */}
-        <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+        {/* Hover overlay action (desktop only) */}
+        <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           <Link to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
             Customize & Order
             <ArrowRight size={14} />
@@ -611,25 +626,35 @@ function ProductCard({ product }: { product: Product }) {
       </div>
 
       {/* Info — padded content section, inspired by apps/user ProductCard */}
-      <div className="flex flex-col flex-1 gap-2 p-4">
+      <div className="flex flex-col flex-1 gap-2 p-4 justify-between">
         <div>
           <span className="text-[10px] text-earth-500 font-medium tracking-wider uppercase">
             {product.category}
             {product.fabric_type && product.fabric_type !== product.category && ` / ${product.fabric_type}`}
           </span>
-          <h3 className="font-display text-base font-semibold text-night-950 group-hover:text-terra-700 transition-colors leading-snug mt-0.5">
+          <h3 className="font-display text-base font-semibold text-night-950 group-hover:text-terra-700 transition-colors leading-snug mt-0.5 line-clamp-2">
             {product.name}
           </h3>
-        </div>
-        <div className="flex items-center gap-2 mt-auto">
-          <span className="font-display text-lg font-bold text-night-950">
-            ₦{product.price.toLocaleString('en-NG')}
-          </span>
-          {product.compare_at_price && (
-            <span className="text-sm text-earth-400 line-through">
-              ₦{product.compare_at_price.toLocaleString('en-NG')}
+          <div className="flex items-center gap-2 mt-2">
+            <span className="font-display text-lg font-bold text-[#B8860B] dark:text-[#D4AF37]">
+              ₦{product.price.toLocaleString('en-NG')}
             </span>
-          )}
+            {product.compare_at_price && (
+              <span className="text-sm text-earth-400 line-through">
+                ₦{product.compare_at_price.toLocaleString('en-NG')}
+              </span>
+            )}
+          </div>
+        </div>
+        {/* Mobile action button (always visible on mobile/tablet, hidden on desktop) */}
+        <div className="mt-3 md:hidden">
+          <Link
+            to={`/order?product=${product.id}`}
+            className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2 min-h-[44px]"
+          >
+            Customize & Order
+            <ArrowRight size={14} />
+          </Link>
         </div>
       </div>
     </div>

@@ -242,20 +242,20 @@ export default function Cart() {
                           {item.order.productName || style?.name || 'Custom Outfit'}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <button
                           onClick={() => navigate(`/order?step=1&edit=${item.id}`)}
-                          className="p-1.5 rounded-lg text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-all"
+                          className="w-11 h-11 flex items-center justify-center rounded-xl text-earth-400 hover:text-terra-600 hover:bg-terra-50 transition-all"
                           title="Edit Customization"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={18} />
                         </button>
                         <button
                           onClick={() => remove(item.id)}
-                          className="p-1.5 rounded-lg text-earth-300 hover:text-red-500 hover:bg-red-50 transition-all"
+                          className="w-11 h-11 flex items-center justify-center rounded-xl text-earth-300 hover:text-red-500 hover:bg-red-50 transition-all"
                           title="Remove item"
                         >
-                          <X size={15} />
+                          <X size={18} />
                         </button>
                       </div>
                     </div>

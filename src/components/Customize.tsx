@@ -81,7 +81,7 @@ export default function Customize() {
               <p className="text-xs text-earth-500 font-semibold tracking-widest uppercase mb-4">
                 Pick Your Fabric
               </p>
-              <div className="flex gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {fabrics.map((fabric, i) => (
                   <button
                     key={fabric.name}
@@ -117,8 +117,8 @@ export default function Customize() {
               <div className="absolute inset-0 bg-gradient-to-t from-night-950/60 via-transparent to-transparent" />
 
               {/* Overlay info */}
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <div className="bg-night-950/80 backdrop-blur-md rounded-xl p-6 border border-earth-800/50">
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8">
+                <div className="bg-night-950/80 backdrop-blur-md rounded-xl p-4 sm:p-6 border border-earth-800/50">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="font-display text-lg font-semibold text-earth-100">

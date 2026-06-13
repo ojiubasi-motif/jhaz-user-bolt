@@ -57,7 +57,7 @@ export default function Categories() {
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {categories.map((cat, i) => (
             <Link
               key={cat.name}
@@ -69,19 +69,20 @@ export default function Categories() {
                 src={cat.image}
                 alt={cat.name}
                 className="img-cover transition-transform duration-700 group-hover:scale-110"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-night-950/80 via-night-950/20 to-transparent" />
               <div className="absolute inset-0 bg-terra-700/0 group-hover:bg-terra-700/10 transition-all duration-500" />
 
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p className="text-xs text-earth-300 font-medium tracking-wider uppercase">
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                <p className="text-[10px] sm:text-xs text-earth-300 font-medium tracking-wider uppercase">
                   {cat.count} Pieces
                 </p>
-                <h3 className="font-display text-xl font-semibold text-earth-50 mt-1 group-hover:text-terra-300 transition-colors">
+                <h3 className="font-display text-sm sm:text-base md:text-lg lg:text-xl font-semibold text-earth-50 mt-0.5 sm:mt-1 group-hover:text-terra-300 transition-colors line-clamp-1">
                   {cat.name}
                 </h3>
-                <p className="text-sm text-earth-400 mt-1">{cat.desc}</p>
-                <span className="inline-flex items-center gap-1 mt-3 text-terra-400 text-sm font-medium opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                <p className="text-[10px] sm:text-xs md:text-sm text-earth-400 mt-0.5 sm:mt-1 line-clamp-1 sm:line-clamp-none">{cat.desc}</p>
+                <span className="inline-flex items-center gap-1 mt-2 sm:mt-3 text-terra-400 text-xs sm:text-sm font-medium opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                   Shop Now <ArrowRight size={14} />
                 </span>
               </div>

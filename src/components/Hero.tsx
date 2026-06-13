@@ -38,12 +38,12 @@ export default function Hero() {
               to Kente accents, every piece tells your story.
             </p>
 
-            <div className="flex flex-wrap gap-4 animate-fade-up delay-300">
-              <Link to="/catalog" className="btn-primary group">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-fade-up delay-300">
+              <Link to="/catalog" className="btn-primary group w-full sm:w-auto">
                 Start Customizing
                 <ArrowRight size={18} className="ml-2 transition-transform group-hover:translate-x-1" />
               </Link>
-              <Link to="/catalog" className="btn-secondary">
+              <Link to="/catalog" className="btn-secondary w-full sm:w-auto">
                 Shop Collection
               </Link>
             </div>
@@ -68,7 +68,7 @@ export default function Hero() {
 
           {/* Right: Hero Image */}
           <div className="relative animate-fade-up delay-200">
-            <div className="relative aspect-[3/4] max-w-md mx-auto lg:ml-auto">
+            <div className="relative h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] aspect-[3/4] max-w-md mx-auto lg:ml-auto">
               {/* Main image */}
               <div className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl">
                 <img
@@ -80,14 +80,14 @@ export default function Hero() {
               </div>
 
               {/* Floating detail card */}
-              <div className="absolute -bottom-6 -left-6 sm:-left-12 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg max-w-[220px] animate-float delay-500">
+              <div className="absolute -bottom-6 -left-2 sm:-left-12 bg-white/95 backdrop-blur-sm rounded-xl p-5 shadow-lg max-w-[220px] animate-float delay-500">
                 <p className="font-display text-sm font-semibold text-night-950">Custom Ankara Set</p>
                 <p className="text-xs text-earth-500 mt-1">Your print. Your fit.</p>
                 <p className="font-display text-lg font-bold text-terra-600 mt-2">₦120,000</p>
               </div>
 
               {/* Floating fabric swatch */}
-              <div className="absolute -top-4 -right-4 sm:-right-8 w-20 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-white animate-float delay-700">
+              <div className="absolute -top-4 -right-2 sm:-right-8 w-20 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-white animate-float delay-700">
                 <img
                   src="https://images.pexels.com/photos/6044242/pexels-photo-6044242.jpeg?auto=compress&cs=tinysrgb&w=200"
                   alt="Ankara fabric swatch"

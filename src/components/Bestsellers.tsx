@@ -39,7 +39,7 @@ export default function Bestsellers() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {loading && displayProducts.length === 0 ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="animate-pulse bg-white rounded-2xl overflow-hidden border border-earth-100 h-96" />
@@ -55,12 +55,13 @@ export default function Bestsellers() {
                   className={`group ${isVisible ? 'animate-fade-up' : 'opacity-0'}`}
                   style={{ animationDelay: `${(i + 1) * 150}ms` }}
                 >
-                  <div className="card-hover">
-                    <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-earth-100">
+                  <div className="card-hover bg-white rounded-2xl overflow-hidden border border-earth-200/60 shadow-sm flex flex-col h-full">
+                    <div className="relative aspect-square md:aspect-[4/3] overflow-hidden bg-earth-100">
                       <img
                         src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
                         alt={product.name}
                         className="img-cover transition-transform duration-700 group-hover:scale-105"
+                        loading="lazy"
                       />
 
                       {/* Sale tag */}
@@ -77,15 +78,15 @@ export default function Bestsellers() {
 
                       {/* Customizable badge */}
                       {product.is_customizable && (
-                        <div className="absolute bottom-4 left-4 right-4">
+                        <div className="absolute bottom-4 left-4 right-4 z-10">
                           <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-white/95 backdrop-blur-sm text-night-950 text-xs font-semibold rounded-full">
                             <span className="w-1.5 h-1.5 rounded-full bg-terra-500" />
                             Customizable
                           </span>
                         </div>
                       )}
-                      {/* Quick action overlay */}
-                      <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                      {/* Quick action overlay (desktop only) */}
+                      <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                         <RouterLink to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
                           Customize & Order
                           <ArrowRight size={14} />
@@ -93,31 +94,43 @@ export default function Bestsellers() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col flex-1 gap-2 p-4">
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: 5 }).map((_, si) => (
-                          <Star
-                            key={si}
-                            size={14}
-                            className={si < Math.floor(product.rating || 5) ? 'fill-kente-500 text-kente-500' : 'text-earth-300'}
-                          />
-                        ))}
-                        <span className="text-xs text-earth-500 ml-1">
-                          {product.rating || 5} ({product.review_count || 12})
-                        </span>
-                      </div>
-                      <h3 className="font-display text-lg font-semibold text-night-950 group-hover:text-terra-700 transition-colors">
-                        {product.name}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <span className="font-display text-xl font-bold text-night-950">
-                          ₦{product.price.toLocaleString('en-NG')}
-                        </span>
-                        {hasDiscount && (
-                          <span className="text-sm text-earth-400 line-through">
-                            ₦{originalPrice.toLocaleString('en-NG')}
+                    <div className="flex flex-col flex-1 gap-2 p-4 justify-between">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, si) => (
+                            <Star
+                              key={si}
+                              size={14}
+                              className={si < Math.floor(product.rating || 5) ? 'fill-kente-500 text-kente-500' : 'text-earth-300'}
+                            />
+                          ))}
+                          <span className="text-xs text-earth-500 ml-1">
+                            {product.rating || 5} ({product.review_count || 12})
                           </span>
-                        )}
+                        </div>
+                        <h3 className="font-display text-lg font-semibold text-night-950 group-hover:text-terra-700 transition-colors line-clamp-2">
+                          {product.name}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          <span className="font-display text-xl font-bold text-[#B8860B] dark:text-[#D4AF37]">
+                            ₦{product.price.toLocaleString('en-NG')}
+                          </span>
+                          {hasDiscount && (
+                            <span className="text-sm text-earth-400 line-through">
+                              ₦{originalPrice.toLocaleString('en-NG')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {/* Mobile action button (always visible on mobile/tablet, hidden on desktop) */}
+                      <div className="mt-3 md:hidden">
+                        <RouterLink
+                          to={`/order?product=${product.id}`}
+                          className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2 min-h-[44px]"
+                        >
+                          Customize & Order
+                          <ArrowRight size={14} />
+                        </RouterLink>
                       </div>
                     </div>
                   </div>

@@ -144,68 +144,93 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button
-            className="lg:hidden p-2 text-night-950"
-            onClick={() => setIsOpen(!isOpen)}
-            aria-label="Toggle menu"
-          >
-            {isOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {/* Mobile Actions & Menu Toggle */}
+          <div className="lg:hidden flex items-center gap-2">
+            <Link
+              to="/catalog"
+              className="p-2 text-night-800 hover:text-terra-600 transition-colors flex items-center justify-center min-w-[44px] min-h-[44px]"
+              aria-label="Search"
+            >
+              <Search size={20} />
+            </Link>
+            <Link
+              to="/cart"
+              className="p-2 text-night-800 hover:text-terra-600 transition-colors relative mr-1 flex items-center justify-center min-w-[44px] min-h-[44px]"
+              aria-label="Cart"
+            >
+              <ShoppingBag size={20} />
+              <CartBadge />
+            </Link>
+            <button
+              className="p-2 text-night-950 flex items-center justify-center min-w-[44px] min-h-[44px]"
+              onClick={() => setIsOpen(!isOpen)}
+              aria-label="Toggle menu"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Drawer */}
       <div
-        className={`lg:hidden overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen ? 'max-h-[450px] opacity-100' : 'max-h-0 opacity-0'
+        className={`fixed inset-0 z-50 lg:hidden transition-all duration-300 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
-        <div className="bg-earth-50/98 backdrop-blur-lg border-t border-earth-200">
-          <div className="section-container py-6 space-y-4">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-night-950/50 backdrop-blur-sm transition-opacity duration-300"
+          onClick={() => setIsOpen(false)}
+        />
+        
+        {/* Drawer panel */}
+        <div
+          className={`absolute inset-y-0 right-0 w-80 max-w-[85vw] bg-earth-50 shadow-2xl flex flex-col p-6 transition-transform duration-300 ${
+            isOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="flex items-center justify-between pb-6 border-b border-earth-200">
+            <span className="font-display text-lg font-bold text-night-950">Menu</span>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-11 h-11 rounded-full bg-earth-200/50 flex items-center justify-center text-night-950 hover:bg-earth-300 transition-colors"
+              aria-label="Close menu"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-6 space-y-6">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 to={link.href}
                 onClick={() => setIsOpen(false)}
-                className="block font-body text-lg font-medium text-night-800 hover:text-terra-600 transition-colors"
+                className="block font-body text-lg font-semibold text-night-800 hover:text-terra-600 transition-colors py-2"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="flex items-center gap-4 pt-4 border-t border-earth-200">
-              <Link to="/catalog" onClick={() => setIsOpen(false)} className="p-2 text-night-800" aria-label="Search">
-                <Search size={20} />
-              </Link>
-              <Link
-                to="/cart"
-                onClick={() => setIsOpen(false)}
-                className="p-2 text-night-800 relative"
-                aria-label="Cart"
-              >
-                <ShoppingBag size={20} />
-                <CartBadge />
-              </Link>
-            </div>
 
             {user ? (
-              <div className="pt-4 border-t border-earth-200 flex flex-col gap-3">
+              <div className="pt-6 border-t border-earth-200 flex flex-col gap-4">
                 <span className="font-body text-xs font-semibold tracking-wider text-terra-600 uppercase">
                   Hello, {user.firstName || user.full_name || 'Guest'}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="w-full py-3 border border-night-950 text-night-950 font-body font-semibold text-xs tracking-wider uppercase text-center rounded-xl"
+                  className="w-full py-3.5 border border-night-950 text-night-950 font-body font-semibold text-sm tracking-wider uppercase text-center rounded-xl active:bg-night-950 active:text-earth-50"
                 >
                   Sign Out
                 </button>
               </div>
             ) : (
-              <div className="pt-4 border-t border-earth-200">
+              <div className="pt-6 border-t border-earth-200">
                 <Link
                   to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
                   onClick={() => setIsOpen(false)}
-                  className="block w-full py-3 bg-night-950 text-earth-50 font-body font-semibold text-xs tracking-wider uppercase text-center rounded-xl"
+                  className="block w-full py-3.5 bg-night-950 text-earth-50 font-body font-semibold text-sm tracking-wider uppercase text-center rounded-xl active:bg-terra-700"
                 >
                   Sign In
                 </Link>
