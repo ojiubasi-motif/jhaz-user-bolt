@@ -53,6 +53,16 @@ interface Order {
   items: OrderItem[];
   payment: PaymentInfo | null;
   statusHistory?: StatusHistoryItem[];
+  delivery?: {
+    fullName: string;
+    phoneNumber: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    deliveryMethod: 'standard' | 'express';
+  } | null;
+  promoCode?: string | null;
 }
 
 function formatNaira(amount: number) {
@@ -447,7 +457,7 @@ export default function MyOrders() {
                     </div>
 
                     {/* Logistics and Reference codes */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-earth-200/80 text-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-earth-200/80 text-xs">
                       {/* Payment info */}
                       <div className="space-y-2">
                         <h4 className="font-display font-extrabold text-night-950 uppercase tracking-wider">Payment Information</h4>
@@ -492,6 +502,35 @@ export default function MyOrders() {
                               )}
                             </button>
                           </div>
+                        )}
+                      </div>
+
+                      {/* Delivery info */}
+                      <div className="space-y-2">
+                        <h4 className="font-display font-extrabold text-night-950 uppercase tracking-wider">Delivery Information</h4>
+                        {order.delivery ? (
+                          <div className="bg-earth-50/40 rounded-xl p-3 border border-earth-100 space-y-1.5">
+                            <div className="flex justify-between">
+                              <span className="text-earth-500">Recipient</span>
+                              <span className="font-semibold text-night-900">{order.delivery.fullName}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-earth-500">Phone</span>
+                              <span className="font-semibold text-night-900">{order.delivery.phoneNumber}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-earth-500">Address</span>
+                              <span className="font-semibold text-night-950 text-right">
+                                {order.delivery.address}, {order.delivery.city}, {order.delivery.state}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-earth-500">Method</span>
+                              <span className="font-bold text-night-900 uppercase">{order.delivery.deliveryMethod}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-earth-500 italic">No delivery details available.</p>
                         )}
                       </div>
 
