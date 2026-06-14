@@ -103,6 +103,8 @@ export default function MyOrders() {
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [verifyingOrderId, setVerifyingOrderId] = useState<string | null>(null);
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -262,6 +264,47 @@ export default function MyOrders() {
       setPayError(err.message || "Failed to complete payment.");
     } finally {
       setPayingOrderId(null);
+    }
+  };
+
+  const handleConfirmPaymentManual = async (orderId: string, reference: string) => {
+    setPayError(null);
+    setVerifyingOrderId(orderId);
+    try {
+      const res = await fetchApi(`/orders/verify/${reference}`, {
+        method: "POST"
+      });
+      if (res.paymentStatus === "COMPLETED" || res.status === "CONFIRMED") {
+        await refreshOrder(orderId);
+        alert("Payment successfully verified! Your order is now confirmed.");
+      } else {
+        alert(`Payment status check returned: ${res.paymentStatus || 'Pending'}. If you just completed the payment, please try again in a few seconds.`);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setPayError(err.message || "Failed to verify payment. Please try again.");
+    } finally {
+      setVerifyingOrderId(null);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!window.confirm("Are you sure you want to cancel and delete this order? This action cannot be undone.")) {
+      return;
+    }
+    setPayError(null);
+    setCancellingOrderId(orderId);
+    try {
+      await fetchApi(`/orders/${orderId}`, {
+        method: "DELETE"
+      });
+      setOrders((prev) => prev.filter((ord) => ord.id !== orderId));
+      alert("Order successfully cancelled and deleted.");
+    } catch (err: any) {
+      console.error(err);
+      setPayError(err.message || "Failed to cancel order.");
+    } finally {
+      setCancellingOrderId(null);
     }
   };
 
@@ -503,13 +546,15 @@ export default function MyOrders() {
                         )}
 
                         {order.status === 'PENDING' && (
-                          <div className="pt-2">
-                            {payError && payingOrderId === order.id && (
+                          <div className="pt-3 space-y-2">
+                            {payError && (payingOrderId === order.id || verifyingOrderId === order.id || cancellingOrderId === order.id) && (
                               <p role="alert" className="text-red-600 mb-2 font-medium">{payError}</p>
                             )}
+                            
+                            {/* Pay Now Button */}
                             <button
                               onClick={() => handleCompletePayment(order.id)}
-                              disabled={payingOrderId !== null}
+                              disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
                               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-55"
                             >
                               {payingOrderId === order.id ? (
@@ -519,6 +564,40 @@ export default function MyOrders() {
                                 </>
                               ) : (
                                 `Pay Now (${formatNaira(order.totalAmount)})`
+                              )}
+                            </button>
+
+                            {/* Confirm Payment Button */}
+                            {order.payment && (
+                              <button
+                                onClick={() => handleConfirmPaymentManual(order.id, order.payment!.reference)}
+                                disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-terra-600 hover:bg-terra-50 text-terra-700 transition-all disabled:opacity-55"
+                              >
+                                {verifyingOrderId === order.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-terra-600"></div>
+                                    Verifying Payment...
+                                  </>
+                                ) : (
+                                  "Confirm Payment (Paid already)"
+                                )}
+                              </button>
+                            )}
+
+                            {/* Cancel Order Button */}
+                            <button
+                              onClick={() => handleCancelOrder(order.id)}
+                              disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
+                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all disabled:opacity-55"
+                            >
+                              {cancellingOrderId === order.id ? (
+                                <>
+                                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-red-600"></div>
+                                  Cancelling Order...
+                                </>
+                              ) : (
+                                "Cancel Order"
                               )}
                             </button>
                           </div>
