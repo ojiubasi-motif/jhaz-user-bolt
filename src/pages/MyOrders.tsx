@@ -166,7 +166,7 @@ export default function MyOrders() {
   const getPageNumbers = () => {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     const pages: (number | string)[] = [];
-    
+
     for (let i = 1; i <= totalPages; i++) {
       if (
         i === 1 ||
@@ -181,7 +181,7 @@ export default function MyOrders() {
         pages.push('...');
       }
     }
-    
+
     return pages.filter((v, idx, arr) => {
       if (v === '...') {
         return arr[idx - 1] !== '...';
@@ -206,7 +206,7 @@ export default function MyOrders() {
   const toggleExpand = async (orderId: string) => {
     const isExpanding = expandedOrder !== orderId;
     setExpandedOrder((prev) => (prev === orderId ? null : orderId));
-    
+
     if (isExpanding) {
       await refreshOrder(orderId);
     }
@@ -228,7 +228,7 @@ export default function MyOrders() {
         onClose: () => {
           reject(new Error("Payment cancelled."));
         },
-        callback: function(response: any) {
+        callback: function (response: any) {
           (async () => {
             try {
               await fetchApi(`/orders/verify/${response.reference}`, {
@@ -253,6 +253,12 @@ export default function MyOrders() {
       const res = await fetchApi(`/orders/${orderId}/payment-intent`, {
         method: "POST"
       });
+
+      if (res.alreadyPaid) {
+        alert("Payment has already been made and verified. Your order is now confirmed!");
+        await refreshOrder(orderId);
+        return;
+      }
 
       // 2. Open Paystack Modal
       await payOrder(res.paystackAccessCode, res.reference, res.amount);
@@ -550,56 +556,58 @@ export default function MyOrders() {
                             {payError && (payingOrderId === order.id || verifyingOrderId === order.id || cancellingOrderId === order.id) && (
                               <p role="alert" className="text-red-600 mb-2 font-medium">{payError}</p>
                             )}
-                            
-                            {/* Pay Now Button */}
-                            <button
-                              onClick={() => handleCompletePayment(order.id)}
-                              disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-55"
-                            >
-                              {payingOrderId === order.id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white"></div>
-                                  Processing Payment...
-                                </>
-                              ) : (
-                                `Pay Now (${formatNaira(order.totalAmount)})`
-                              )}
-                            </button>
 
-                            {/* Confirm Payment Button */}
-                            {order.payment && (
+                            <div className="flex flex-col sm:flex-row md:flex-col gap-2">
+                              {/* Pay Now Button */}
                               <button
-                                onClick={() => handleConfirmPaymentManual(order.id, order.payment!.reference)}
+                                onClick={() => handleCompletePayment(order.id)}
                                 disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-terra-600 hover:bg-terra-50 text-terra-700 transition-all disabled:opacity-55"
+                                className="w-full sm:flex-1 md:w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-kente-600 hover:bg-kente-700 text-white transition-all disabled:opacity-55"
                               >
-                                {verifyingOrderId === order.id ? (
+                                {payingOrderId === order.id ? (
                                   <>
-                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-terra-600"></div>
-                                    Verifying Payment...
+                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-white"></div>
+                                    Processing Payment...
                                   </>
                                 ) : (
-                                  "Confirm Payment (Paid already)"
+                                  `Pay Now (${formatNaira(order.totalAmount)})`
                                 )}
                               </button>
-                            )}
 
-                            {/* Cancel Order Button */}
-                            <button
-                              onClick={() => handleCancelOrder(order.id)}
-                              disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
-                              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all disabled:opacity-55"
-                            >
-                              {cancellingOrderId === order.id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-red-600"></div>
-                                  Cancelling Order...
-                                </>
-                              ) : (
-                                "Cancel Order"
+                              {/* Confirm Payment Button */}
+                              {order.payment && (
+                                <button
+                                  onClick={() => handleConfirmPaymentManual(order.id, order.payment!.reference)}
+                                  disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
+                                  className="w-full sm:flex-1 md:w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-terra-600 hover:bg-terra-50 text-terra-700 transition-all disabled:opacity-55"
+                                >
+                                  {verifyingOrderId === order.id ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-terra-600"></div>
+                                      Verifying Payment...
+                                    </>
+                                  ) : (
+                                    "Confirm Payment (Paid already)"
+                                  )}
+                                </button>
                               )}
-                            </button>
+
+                              {/* Cancel Order Button */}
+                              <button
+                                onClick={() => handleCancelOrder(order.id)}
+                                disabled={payingOrderId !== null || verifyingOrderId !== null || cancellingOrderId !== null}
+                                className="w-full sm:flex-1 md:w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-all disabled:opacity-55"
+                              >
+                                {cancellingOrderId === order.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-t-2 border-b-2 border-red-600"></div>
+                                    Cancelling Order...
+                                  </>
+                                ) : (
+                                  "Cancel Order"
+                                )}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -697,11 +705,10 @@ export default function MyOrders() {
                   <button
                     key={idx}
                     onClick={() => handlePageChange(p as number)}
-                    className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-all duration-200 ${
-                      currentPage === p
+                    className={`w-8 h-8 rounded-lg text-xs font-bold flex items-center justify-center transition-all duration-200 ${currentPage === p
                         ? 'bg-kente-600 hover:bg-kente-700 text-white'
                         : 'border border-earth-300 text-night-950 bg-white hover:bg-earth-100'
-                    }`}
+                      }`}
                   >
                     {p}
                   </button>
