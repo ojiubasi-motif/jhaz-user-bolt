@@ -2388,7 +2388,11 @@ function StepConfirmation({
         <div className="flex justify-between items-center pb-3 border-b border-earth-200">
           <div>
             <p className="text-[10px] text-earth-500 uppercase tracking-wider">Paystack Reference</p>
-            <p className="font-mono text-xs text-night-800">{paymentReference}</p>
+            <p className="font-mono text-xs text-night-800" title={paymentReference}>
+              {paymentReference.length > 20
+                ? `${paymentReference.slice(0, 10)}...${paymentReference.slice(-8)}`
+                : paymentReference}
+            </p>
           </div>
           <button onClick={() => copy(paymentReference, 'ref')} className="text-earth-400 hover:text-terra-600 transition-colors">
             {copiedRef ? <Check size={16} /> : <Copy size={16} />}

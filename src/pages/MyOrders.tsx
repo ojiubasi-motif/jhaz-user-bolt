@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, ChevronLeft, ChevronRight, ShoppingBag, Eye, Clock, ShieldCheck, Ruler } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, ShoppingBag, Eye, Clock, ShieldCheck, Ruler, Copy, Check } from 'lucide-react';
 import { useAppSelector } from '../store/hooks';
 import { fetchApi } from '../lib/apiClient';
 
@@ -102,6 +102,13 @@ export default function MyOrders() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -467,9 +474,22 @@ export default function MyOrders() {
                               <span className="text-earth-500">Provider</span>
                               <span className="font-semibold text-night-900">{order.payment.provider}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between items-center">
                               <span className="text-earth-500">Transaction ID</span>
-                              <span className="font-mono text-night-900 select-all">{order.payment.reference}</span>
+                              <div className="flex items-center gap-1 font-mono text-night-900">
+                                <span title={order.payment.reference}>
+                                  {order.payment.reference.length > 20
+                                    ? `${order.payment.reference.slice(0, 10)}...${order.payment.reference.slice(-8)}`
+                                    : order.payment.reference}
+                                </span>
+                                <button
+                                  onClick={() => handleCopy(order.payment?.reference || "", order.payment?.reference || "")}
+                                  className="text-earth-400 hover:text-terra-600 transition-colors p-0.5"
+                                  title="Copy transaction ID"
+                                >
+                                  {copiedId === order.payment.reference ? <Check size={12} /> : <Copy size={12} />}
+                                </button>
+                              </div>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-earth-500">Status</span>
