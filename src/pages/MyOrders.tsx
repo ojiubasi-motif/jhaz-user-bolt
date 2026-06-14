@@ -73,6 +73,15 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+
 export default function MyOrders() {
   const { user } = useAppSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -355,7 +364,7 @@ export default function MyOrders() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-earth-500 font-medium">
                       <span className="flex items-center gap-1">
                         <Calendar size={12} />
-                        {formatDate(order.createdAt)}
+                        {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
                       </span>
                       {order.payment && (
                         <span className="flex items-center gap-1">
@@ -497,7 +506,7 @@ export default function MyOrders() {
                                   <span className="absolute -left-[21px] top-1 bg-terra-600 rounded-full w-2 h-2"></span>
                                   <div className="flex justify-between gap-2">
                                     <span className="font-semibold text-night-950">{history.status}</span>
-                                    <span className="text-[10px] text-earth-400">{formatDate(history.createdAt)}</span>
+                                    <span className="text-[10px] text-earth-400">{formatDate(history.createdAt)} at {formatTime(history.createdAt)}</span>
                                   </div>
                                   {history.note && <p className="text-earth-500 mt-0.5">{history.note}</p>}
                                 </div>
