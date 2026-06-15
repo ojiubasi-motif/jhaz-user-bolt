@@ -2032,13 +2032,17 @@ function StepOrderSummary({
   const handleRefreshCartPrices = async () => {
     setIsRefreshingPrices(true);
     try {
+      let failedCount = 0;
       const updatedCartItems = await Promise.all(
         cartItems.map(async (item) => {
           if (!item.order.productId) return item;
           try {
             // Fetch the latest product details
             const product = await fetchApi(`/v1/products/${item.order.productId}`, { skipAuth: true });
-            if (!product) return item;
+            if (!product) {
+              failedCount++;
+              return item;
+            }
 
             // Clone the order to avoid mutations
             const updatedOrder = JSON.parse(JSON.stringify(item.order));
@@ -2103,6 +2107,7 @@ function StepOrderSummary({
             };
           } catch (e) {
             console.warn(`Could not refresh prices for productId=${item.order.productId}:`, e);
+            failedCount++;
             return item;
           }
         })
@@ -2110,6 +2115,10 @@ function StepOrderSummary({
 
       // Save back to local storage
       saveCart(updatedCartItems);
+
+      if (failedCount > 0) {
+        alert("Some items in your cart are no longer active or available, and their prices could not be updated. Please review your cart items.");
+      }
 
       // Reload page to reflect updated cart
       window.location.reload();
