@@ -429,7 +429,7 @@ export default function Order() {
     const totalPaid = orderDetails?.totalAmount || (itemsSubtotal + deliveryFee);
     const orderId = orderDetails?.orderId || `JHZ-${Date.now().toString(36).toUpperCase()}`;
     const styleObj = OUTFIT_STYLES.find((s) => s.id === cartItems[0]?.order?.style || orderData.style);
-    
+
     setConfirmedOrderInfo({
       orderId,
       paymentReference: ref,
@@ -465,7 +465,7 @@ export default function Order() {
         onClose: () => {
           reject(new Error("Payment cancelled."));
         },
-        callback: function(response: any) {
+        callback: function (response: any) {
           (async () => {
             try {
               await fetchApi(`/orders/verify/${response.reference}`, {
@@ -619,7 +619,7 @@ export default function Order() {
           } : undefined,
         }),
       });
-      
+
       setIsProcessing(false);
       handlePaymentComplete(`OFFLINE_${res.reference || Date.now()}`, { orderId: res.orderId, totalAmount: res.totalAmount });
     } catch (err: any) {
@@ -780,20 +780,18 @@ function ProgressBar({ currentStep }: { currentStep: number }) {
             return (
               <div key={step.id} className="flex flex-col items-center">
                 <div
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-300 ${
-                    done
+                  className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-bold transition-all duration-300 ${done
                       ? 'border-terra-600 bg-terra-600 text-white'
                       : active
                         ? 'border-kente-500 bg-kente-500 text-white'
                         : 'border-earth-300 bg-earth-50 text-earth-400'
-                  }`}
+                    }`}
                 >
                   {done ? <Check size={14} /> : step.id}
                 </div>
                 <span
-                  className={`mt-1.5 text-[10px] sm:text-xs font-medium text-center max-w-[52px] sm:max-w-none leading-tight ${
-                    done || active ? 'text-night-950' : 'text-earth-400'
-                  }`}
+                  className={`mt-1.5 text-[10px] sm:text-xs font-medium text-center max-w-[52px] sm:max-w-none leading-tight ${done || active ? 'text-night-950' : 'text-earth-400'
+                    }`}
                 >
                   {step.name}
                 </span>
@@ -840,13 +838,11 @@ function StepNav({
       <button
         onClick={onNext}
         disabled={nextDisabled}
-        className={`flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 min-h-[44px] ${
-          !hasBack ? 'w-full md:w-auto' : ''
-        } ${
-          nextDisabled
+        className={`flex-grow md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all duration-200 min-h-[44px] ${!hasBack ? 'w-full md:w-auto' : ''
+          } ${nextDisabled
             ? 'bg-earth-200 text-earth-400 cursor-not-allowed'
             : nextClassName || 'btn-primary'
-        }`}
+          }`}
       >
         {nextLabel}
         <ChevronRight size={16} />
@@ -882,11 +878,10 @@ function StepStyleSelection({
           <button
             key={style.id}
             onClick={() => onSelect(style.id)}
-            className={`group relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${
-              selected === style.id
+            className={`group relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${selected === style.id
                 ? 'border-kente-500 ring-2 ring-kente-500/30'
                 : 'border-earth-200 hover:border-terra-400'
-            }`}
+              }`}
           >
             <div className="aspect-[3/4] relative">
               <img src={style.image} alt={style.name} className="img-cover transition-transform duration-300 group-hover:scale-105" />
@@ -977,16 +972,15 @@ function StepFabricSelection({
           {fabricOptions.map((p) => {
             const unitsNeeded = Math.ceil(fabricQty / p.yardsPerUnit);
             const totalFabricCost = p.price * unitsNeeded;
-            
+
             return (
               <button
                 key={p.id}
                 onClick={() => handlePreset(p.id)}
-                className={`relative p-3 rounded-xl border-2 text-left transition-all ${
-                  fabric?.type === 'preset' && fabric.presetId === p.id
+                className={`relative p-3 rounded-xl border-2 text-left transition-all ${fabric?.type === 'preset' && fabric.presetId === p.id
                     ? 'border-kente-500 ring-2 ring-kente-500/30'
                     : 'border-earth-200 hover:border-terra-400'
-                }`}
+                  }`}
               >
                 <div
                   className="h-14 w-full rounded-lg mb-2 border border-earth-200 bg-cover bg-center"
@@ -997,8 +991,8 @@ function StepFabricSelection({
                 />
                 <p className="text-xs font-semibold text-night-950 truncate" title={p.name}>{p.name}</p>
                 <p className="text-[10px] text-earth-500">
-                  {p.price === 0 
-                    ? 'Included' 
+                  {p.price === 0
+                    ? 'Included'
                     : `+${formatNaira(totalFabricCost)} (${unitsNeeded} ${p.unit}${unitsNeeded > 1 ? 's' : ''})`
                   }
                 </p>
@@ -1022,11 +1016,10 @@ function StepFabricSelection({
       <div>
         <h3 className="font-display text-base font-semibold text-night-950 mb-3">Or Upload Your Own</h3>
         <label
-          className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
-            customImage
+          className={`flex flex-col items-center justify-center w-full h-28 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${customImage
               ? 'border-kente-500 bg-kente-50'
               : 'border-earth-300 hover:border-terra-400 bg-earth-50'
-          }`}
+            }`}
         >
           {customImage ? (
             <div className="flex items-center gap-3">
@@ -1280,7 +1273,7 @@ function StepMeasurements({
           original.length !== form.height ||
           original.shoulder !== form.shoulderWidth
         );
-        
+
         if (changed) {
           try {
             setIsSaving(true);
@@ -1550,9 +1543,8 @@ function StepMeasurements({
       {(!user || isCreatingNew) && (
         <label className="flex items-center gap-3 cursor-pointer group">
           <span
-            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${
-              form.saveForFuture ? 'bg-terra-600 border-terra-600' : 'border-earth-400 group-hover:border-terra-400'
-            }`}
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200 ${form.saveForFuture ? 'bg-terra-600 border-terra-600' : 'border-earth-400 group-hover:border-terra-400'
+              }`}
             onClick={() => handleChange('saveForFuture', !form.saveForFuture)}
           >
             {form.saveForFuture && (
@@ -1760,11 +1752,10 @@ function StepDelivery({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => handleChange('deliveryMethod', 'standard')}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-              form.deliveryMethod === 'standard'
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${form.deliveryMethod === 'standard'
                 ? 'border-kente-500 bg-kente-50'
                 : 'border-earth-200 hover:border-terra-400'
-            }`}
+              }`}
           >
             <Truck size={20} className="text-terra-700 mt-0.5 shrink-0" />
             <div>
@@ -1775,11 +1766,10 @@ function StepDelivery({
           </button>
           <button
             onClick={() => handleChange('deliveryMethod', 'express')}
-            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${
-              form.deliveryMethod === 'express'
+            className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all ${form.deliveryMethod === 'express'
                 ? 'border-kente-500 bg-kente-50'
                 : 'border-earth-200 hover:border-terra-400'
-            }`}
+              }`}
           >
             <Zap size={20} className="text-kente-600 mt-0.5 shrink-0" />
             <div>
@@ -1858,10 +1848,10 @@ function StepCart({
           const style = OUTFIT_STYLES.find((s) => s.id === item.order.style);
           const fabric = item.order.fabric?.type === 'preset'
             ? {
-                name: item.order.fabric.presetName || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.name || 'Custom Fabric',
-                color: item.order.fabric.presetColor || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.color || '#eee',
-                price: item.order.fabric.presetPrice ?? FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.price ?? 0,
-              }
+              name: item.order.fabric.presetName || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.name || 'Custom Fabric',
+              color: item.order.fabric.presetColor || FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.color || '#eee',
+              price: item.order.fabric.presetPrice ?? FABRIC_PRESETS.find((f) => f.id === item.order.fabric?.presetId)?.price ?? 0,
+            }
             : null;
           const { basePrice, customizationFee } = calculateOrderTotal(item.order);
           const itemTotal = basePrice + customizationFee;
@@ -2045,17 +2035,18 @@ function StepOrderSummary({
       const updatedCartItems = await Promise.all(
         cartItems.map(async (item) => {
           if (!item.order.productId) return item;
-          // Fetch the latest product details
-          const product = await fetchApi(`/v1/products/${item.order.productId}`, { skipAuth: true });
-          if (!product) return item;
+          try {
+            // Fetch the latest product details
+            const product = await fetchApi(`/v1/products/${item.order.productId}`, { skipAuth: true });
+            if (!product) return item;
 
-          // Clone the order to avoid mutations
-          const updatedOrder = JSON.parse(JSON.stringify(item.order));
+            // Clone the order to avoid mutations
+            const updatedOrder = JSON.parse(JSON.stringify(item.order));
 
           // 1. Update style base price
           const selectedStyleName = updatedOrder.customStyleInfo?.name || 'Standard';
           let updatedBasePrice = product.basePrice || 0;
-          
+
           if (selectedStyleName.toLowerCase() !== 'standard' && selectedStyleName.toLowerCase() !== 'original') {
             const matchedStyle = product.styleOptions?.find(
               (s: any) => s.name.toLowerCase() === selectedStyleName.toLowerCase()
@@ -2064,7 +2055,7 @@ function StepOrderSummary({
               updatedBasePrice = (product.basePrice || 0) + (matchedStyle.priceModifier || 0);
             }
           }
-          
+
           if (updatedOrder.customStyleInfo) {
             updatedOrder.customStyleInfo.basePrice = updatedBasePrice;
           }
@@ -2095,16 +2086,20 @@ function StepOrderSummary({
             }
           }
 
-          return {
-            ...item,
-            order: updatedOrder,
-          };
+            return {
+              ...item,
+              order: updatedOrder,
+            };
+          } catch (e) {
+            console.warn(`Could not refresh prices for productId=${item.order.productId}:`, e);
+            return item;
+          }
         })
       );
 
       // Save back to local storage
       saveCart(updatedCartItems);
-      
+
       // Reload page to reflect updated cart
       window.location.reload();
     } catch (err) {
