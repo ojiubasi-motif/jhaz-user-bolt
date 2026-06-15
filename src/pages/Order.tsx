@@ -196,7 +196,7 @@ export default function Order() {
   const [searchParams, setSearchParams] = useSearchParams();
   const dispatch = useAppDispatch();
   const productId = searchParams.get('product');
-  const { products, activeProduct } = useAppSelector((state) => state.catalog);
+  const { products, activeProduct, loading } = useAppSelector((state) => state.catalog);
 
   // Fetch products on mount if not loaded
   useEffect(() => {
@@ -655,6 +655,7 @@ export default function Order() {
             <StepStyleSelection
               selected={orderData.style}
               outfitStyles={outfitStyles}
+              isLoading={loading || !currentProduct}
               onSelect={(s) => {
                 const styleObj = outfitStyles.find((style) => style.id === s);
                 setOrderData((prev) => ({
@@ -858,11 +859,13 @@ function StepNav({
 function StepStyleSelection({
   selected,
   outfitStyles,
+  isLoading,
   onSelect,
   onNext,
 }: {
   selected: string | null;
   outfitStyles: readonly any[];
+  isLoading?: boolean;
   onSelect: (s: string) => void;
   onNext: () => void;
 }) {
@@ -873,35 +876,54 @@ function StepStyleSelection({
         <p className="mt-1 text-earth-500 text-sm">Select the traditional outfit style you'd like us to create.</p>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {outfitStyles.map((style) => (
-          <button
-            key={style.id}
-            onClick={() => onSelect(style.id)}
-            className={`group relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${selected === style.id
-                ? 'border-kente-500 ring-2 ring-kente-500/30'
-                : 'border-earth-200 hover:border-terra-400'
-              }`}
-          >
-            <div className="aspect-[3/4] relative">
-              <img src={style.image} alt={style.name} className="img-cover transition-transform duration-300 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-night-950/80 via-night-950/20 to-transparent" />
-              {selected === style.id && (
-                <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-kente-500 flex items-center justify-center">
-                  <Check size={14} className="text-white" />
-                </div>
-              )}
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse relative rounded-xl overflow-hidden border border-earth-200 bg-earth-100"
+            >
+              <div className="aspect-[3/4] bg-earth-200" />
+              <div className="absolute bottom-0 inset-x-0 p-3 space-y-1.5 bg-gradient-to-t from-night-950/80 to-transparent">
+                <div className="h-3.5 bg-earth-300/40 rounded w-2/3" />
+                <div className="h-2 bg-earth-300/30 rounded w-5/6" />
+                <div className="h-2 bg-earth-300/30 rounded w-1/2" />
+                <div className="h-3 bg-kente-400/40 rounded w-1/3 mt-1" />
+              </div>
             </div>
-            <div className="absolute bottom-0 inset-x-0 p-3 text-left">
-              <h3 className="font-display text-sm font-semibold text-white">{style.name}</h3>
-              <p className="text-[10px] text-white/70 mt-0.5 leading-tight">{style.description}</p>
-              <p className="text-xs font-bold text-kente-400 mt-1">From {formatNaira(style.basePrice)}</p>
-            </div>
-          </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {outfitStyles.map((style) => (
+            <button
+              key={style.id}
+              onClick={() => onSelect(style.id)}
+              className={`group relative rounded-xl overflow-hidden border-2 transition-all duration-300 ${selected === style.id
+                  ? 'border-kente-500 ring-2 ring-kente-500/30'
+                  : 'border-earth-200 hover:border-terra-400'
+                }`}
+            >
+              <div className="aspect-[3/4] relative">
+                <img src={style.image} alt={style.name} className="img-cover transition-transform duration-300 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-night-950/80 via-night-950/20 to-transparent" />
+                {selected === style.id && (
+                  <div className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-kente-500 flex items-center justify-center">
+                    <Check size={14} className="text-white" />
+                  </div>
+                )}
+              </div>
+              <div className="absolute bottom-0 inset-x-0 p-3 text-left">
+                <h3 className="font-display text-sm font-semibold text-white">{style.name}</h3>
+                <p className="text-[10px] text-white/70 mt-0.5 leading-tight">{style.description}</p>
+                <p className="text-xs font-bold text-kente-400 mt-1">From {formatNaira(style.basePrice)}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
 
-      <StepNav onNext={onNext} nextDisabled={!selected} nextLabel="Continue to Measurements" showBack={false} />
+      <StepNav onNext={onNext} nextDisabled={!!isLoading || !selected} nextLabel="Continue to Measurements" showBack={false} />
     </div>
   );
 }
