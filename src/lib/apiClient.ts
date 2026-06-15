@@ -143,11 +143,11 @@ export async function fetchApi(
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('auth-expired'));
     }
-    throw new Error(data?.msg || 'Session expired');
+    throw new Error(data?.msg || data?.message || 'Session expired');
   }
 
   if (!response.ok) {
-    throw new Error(data?.msg || `API error: ${response.statusText}`);
+    throw new Error(data?.msg || data?.message || `API error: ${response.statusText}`);
   }
 
   // Return only the data payload if it follows the Quizio envelope

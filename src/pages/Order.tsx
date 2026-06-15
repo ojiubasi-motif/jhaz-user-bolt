@@ -2037,6 +2037,85 @@ function StepOrderSummary({
     }
   };
 
+  const [isRefreshingPrices, setIsRefreshingPrices] = useState(false);
+
+  const handleRefreshCartPrices = async () => {
+    setIsRefreshingPrices(true);
+    try {
+      const updatedCartItems = await Promise.all(
+        cartItems.map(async (item) => {
+          if (!item.order.productId) return item;
+          // Fetch the latest product details
+          const product = await fetchApi(`/v1/products/${item.order.productId}`, { skipAuth: true });
+          if (!product) return item;
+
+          // Clone the order to avoid mutations
+          const updatedOrder = JSON.parse(JSON.stringify(item.order));
+
+          // 1. Update style base price
+          const selectedStyleName = updatedOrder.customStyleInfo?.name || 'Standard';
+          let updatedBasePrice = product.basePrice || 0;
+          
+          if (selectedStyleName.toLowerCase() !== 'standard' && selectedStyleName.toLowerCase() !== 'original') {
+            const matchedStyle = product.styleOptions?.find(
+              (s: any) => s.name.toLowerCase() === selectedStyleName.toLowerCase()
+            );
+            if (matchedStyle) {
+              updatedBasePrice = (product.basePrice || 0) + (matchedStyle.priceModifier || 0);
+            }
+          }
+          
+          if (updatedOrder.customStyleInfo) {
+            updatedOrder.customStyleInfo.basePrice = updatedBasePrice;
+          }
+
+          // 2. Update fabric selection details
+          if (updatedOrder.fabric && updatedOrder.fabric.type === 'preset' && updatedOrder.fabric.presetId) {
+            const presetId = updatedOrder.fabric.presetId;
+            let matchedProp: any = null;
+            let matchedFabricName = '';
+
+            for (const f of (product.fabrics || [])) {
+              const prop = f.properties?.find((p: any) => {
+                const colorName = updatedOrder.fabric?.presetName?.split(' — ')?.[1] || '';
+                return p._id === presetId || p.id === presetId || p.colorName.toLowerCase() === colorName.toLowerCase();
+              });
+              if (prop) {
+                matchedProp = prop;
+                matchedFabricName = f.name;
+                break;
+              }
+            }
+
+            if (matchedProp) {
+              updatedOrder.fabric.presetPrice = matchedProp.priceModifier || 0;
+              updatedOrder.fabric.presetYardsPerUnit = matchedProp.yardsPerUnit || 1.0;
+              updatedOrder.fabric.presetUnit = matchedProp.unit || 'yard';
+              updatedOrder.fabric.presetName = `${matchedFabricName} — ${matchedProp.colorName}`;
+            }
+          }
+
+          return {
+            ...item,
+            order: updatedOrder,
+          };
+        })
+      );
+
+      // Save back to local storage
+      saveCart(updatedCartItems);
+      
+      // Reload page to reflect updated cart
+      window.location.reload();
+    } catch (err) {
+      console.error('Failed to refresh cart prices:', err);
+      alert('Failed to refresh prices. Please check your connection.');
+    } finally {
+      setIsRefreshingPrices(false);
+    }
+  };
+
+
   return (
     <div className="space-y-5">
       <div className="text-center">
@@ -2224,7 +2303,30 @@ function StepOrderSummary({
       {/* Error display */}
       {paymentError && (
         <div role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700 border border-red-200">
-          ❌ {paymentError}
+          <div className="flex items-start justify-between gap-3">
+            <span className="flex-1">❌ {paymentError}</span>
+            {paymentError.includes('Price mismatch') && (
+              <button
+                onClick={handleRefreshCartPrices}
+                disabled={isRefreshingPrices}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-red-800 hover:text-red-950 underline shrink-0 disabled:opacity-50"
+              >
+                {isRefreshingPrices ? (
+                  <>
+                    <Loader2 size={12} className="animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3 3 3m-3-3v12" />
+                    </svg>
+                    Refresh Cart
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
