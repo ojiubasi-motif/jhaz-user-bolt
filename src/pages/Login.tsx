@@ -62,7 +62,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-earth-50 pt-28 pb-16 flex items-center pattern-overlay">
-      <div className="section-container max-w-md w-full" ref={ref}>
+      <div className="section-container max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl w-full" ref={ref}>
         <div className={`bg-white rounded-2xl border border-earth-200/60 p-8 sm:p-10 shadow-xl transition-all duration-700 ${
           isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}>
