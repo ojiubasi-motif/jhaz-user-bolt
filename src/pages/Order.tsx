@@ -2066,15 +2066,26 @@ function StepOrderSummary({
             let matchedProp: any = null;
             let matchedFabricName = '';
 
+            // Handle database fabric presetIds (format: fabricId::colorName)
+            const parts = presetId.split('::');
+            const fabricIdFromPreset = parts[0];
+            const colorNameFromPreset = parts[1];
+
             for (const f of (product.fabrics || [])) {
-              const prop = f.properties?.find((p: any) => {
-                const colorName = updatedOrder.fabric?.presetName?.split(' — ')?.[1] || '';
-                return p._id === presetId || p.id === presetId || p.colorName.toLowerCase() === colorName.toLowerCase();
-              });
-              if (prop) {
-                matchedProp = prop;
-                matchedFabricName = f.name;
-                break;
+              const fId = (f.id || f._id || '').toString();
+              if (fabricIdFromPreset && fId === fabricIdFromPreset) {
+                const prop = f.properties?.find((p: any) => {
+                  if (colorNameFromPreset && p.colorName) {
+                    return p.colorName.toLowerCase() === colorNameFromPreset.toLowerCase();
+                  }
+                  const pId = (p._id || p.id || '').toString();
+                  return pId === presetId || pId === fabricIdFromPreset;
+                });
+                if (prop) {
+                  matchedProp = prop;
+                  matchedFabricName = f.name;
+                  break;
+                }
               }
             }
 
