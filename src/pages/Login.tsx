@@ -41,8 +41,8 @@ export default function Login() {
     
     if (!password) {
       errors.password = 'Password is required';
-    } else if (password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
     }
 
     setFormErrors(errors);
@@ -118,6 +118,12 @@ export default function Login() {
                 <label className="block text-xs font-semibold text-night-900" htmlFor="password">
                   Password
                 </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-terra-600 font-semibold hover:text-terra-800 transition-colors"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-earth-400" />

@@ -20,6 +20,9 @@ import Cart from './pages/Cart';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import MyOrders from './pages/MyOrders';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import LastLoginBanner from './components/LastLoginBanner';
 
 function ScrollToTop() {
   const { pathname, search, hash } = useLocation();
@@ -58,6 +61,7 @@ function App() {
     <Provider store={store}>
       <AuthInitializer>
         <div className="font-body bg-earth-50 text-night-950">
+          <LastLoginBanner />
           <ScrollToTop />
           <Navbar />
           <Routes>
@@ -68,6 +72,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
           </Routes>
           <Footer />
         </div>

@@ -21,6 +21,8 @@ interface User {
   firstName?: string;
   lastName?: string;
   full_name?: string;
+  lastLoginAt?: string;
+  lastLoginIp?: string;
 }
 
 interface AuthState {
