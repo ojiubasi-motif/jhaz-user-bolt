@@ -4,6 +4,7 @@ import { Menu, X, ShoppingBag, Search } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { logoutUser } from '../store/slices/authSlice';
 import logo from '../assets/logo.png';
+import LastLoginBanner from './LastLoginBanner';
 
 const navLinks = [
   { label: 'Shop All', href: '/catalog' },
@@ -83,6 +84,7 @@ export default function Navbar() {
             : 'bg-transparent'
         }`}
       >
+        <LastLoginBanner />
         <div className="section-container">
           <div className="flex items-center justify-between h-20 sm:h-24">
             {/* Logo */}

@@ -20,22 +20,23 @@ export default function LastLoginBanner() {
   });
 
   return (
-    <div className="bg-night-950 text-white py-3 px-4 sm:px-6 md:px-8 border-b border-earth-800/20 text-xs sm:text-sm font-body animate-fade-up relative z-50">
+    <div className="bg-earth-100/95 backdrop-blur-sm text-earth-800 py-1.5 px-4 sm:px-6 md:px-8 border-b border-earth-200/50 text-[11px] sm:text-xs font-body animate-fade-in relative z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Shield size={16} className="text-terra-500 shrink-0" />
-          <span>
-            Security Notice: Last login was on <strong className="text-terra-200">{formattedDate}</strong> from IP <strong className="text-terra-200">{user.lastLoginIp || 'unknown'}</strong>.
+          <Shield size={14} className="text-terra-600 shrink-0 animate-pulse" />
+          <span className="leading-none">
+            Security Notice: Last login was on <strong className="text-night-950 font-semibold">{formattedDate}</strong> from IP <strong className="text-night-950 font-semibold">{user.lastLoginIp || 'unknown'}</strong>.
           </span>
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="text-earth-300 hover:text-white p-1 hover:bg-earth-800/40 rounded transition-colors"
+          className="text-earth-500 hover:text-terra-600 p-1 hover:bg-earth-200/60 rounded transition-all duration-200 cursor-pointer flex items-center justify-center"
           aria-label="Dismiss security notice"
         >
-          <X size={16} />
+          <X size={14} />
         </button>
       </div>
     </div>
   );
 }
+
