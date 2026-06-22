@@ -38,14 +38,14 @@ interface PaymentInfo {
 interface StatusHistoryItem {
   id: string;
   orderId: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PRODUCTION' | 'READY' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
   note: string | null;
   createdAt: string;
 }
 
 interface Order {
   id: string;
-  status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'IN_PRODUCTION' | 'READY' | 'DISPATCHED' | 'DELIVERED' | 'CANCELLED';
   totalAmount: number;
   currency: string;
   notes: string | null;
@@ -318,10 +318,12 @@ export default function MyOrders() {
     switch (status) {
       case 'DELIVERED':
         return 'bg-green-50 text-green-700 border-green-200';
-      case 'SHIPPED':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'PROCESSING':
+      case 'DISPATCHED':
         return 'bg-sky-50 text-sky-700 border-sky-200';
+      case 'READY':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'IN_PRODUCTION':
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
       case 'CONFIRMED':
         return 'bg-savanna-50 text-savanna-800 border-savanna-200';
       case 'CANCELLED':
