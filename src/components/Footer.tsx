@@ -53,13 +53,13 @@ export default function Footer() {
             </p>
             <div className="space-y-2 flex flex-col items-center sm:items-start w-full">
               <a href="#" className="flex items-center gap-2 text-sm hover:text-terra-400 transition-colors py-2">
-                <MapPin size={14} /> Accra, Ghana
+                <MapPin size={14} /> Abuja, Nigeria
               </a>
               <a href="#" className="flex items-center gap-2 text-sm hover:text-terra-400 transition-colors py-2">
-                <Mail size={14} /> hello@jhazimprints.com
+                <Mail size={14} />chief.tailor@jhazimprints.shop
               </a>
               <a href="#" className="flex items-center gap-2 text-sm hover:text-terra-400 transition-colors py-2">
-                <Phone size={14} /> +233 XX XXX XXXX
+                <Phone size={14} /> +2347035834390
               </a>
             </div>
           </div>
