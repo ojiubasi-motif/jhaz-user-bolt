@@ -19,6 +19,9 @@ interface OrderItem {
   fabricOptionName: string;
   styleOptionName: string;
   colorName: string | null;
+  fabricImgUrl?: string;
+  styleImgUrl?: string;
+  imgUrl?: string;
   basePrice: number;
   styleModifier: number;
   fabricModifier: number;
@@ -468,16 +471,51 @@ export default function MyOrders() {
                       </h3>
                       <div className="divide-y divide-earth-100">
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row gap-4">
-                            <div className="flex-1 space-y-3">
+                          <div key={idx} className="py-4 first:pt-0 last:pb-0 flex gap-4 items-start border-b border-earth-100 last:border-0">
+                            {item.imgUrl && (
+                              <div className="w-16 h-16 rounded-xl overflow-hidden border border-earth-200 bg-earth-50 shrink-0">
+                                <img src={item.imgUrl} alt={item.productName} className="w-full h-full object-cover" />
+                              </div>
+                            )}
+                            <div className="flex-1 space-y-3 min-w-0">
                               <div>
-                                <h4 className="font-semibold text-night-950 text-sm sm:text-base">
-                                  {item.productName || 'Custom Outfit'}
-                                </h4>
+                                <div className="flex justify-between items-start gap-2">
+                                  <h4 className="font-semibold text-night-950 text-sm sm:text-base truncate">
+                                    {item.productName || 'Custom Outfit'}
+                                  </h4>
+                                  <p className="font-bold text-night-950 text-sm sm:text-base shrink-0">{formatNaira(item.totalAmount)}</p>
+                                </div>
                                 <p className="text-xs text-earth-500 mt-0.5">
                                   Style: <span className="font-bold text-night-900">{item.styleOptionName}</span> · Fabric: <span className="font-bold text-night-900">{item.fabricOptionName}</span>
                                 </p>
+                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-earth-400 mt-1">
+                                  <span>Base: {formatNaira(item.basePrice)}</span>
+                                  {item.fabricModifier > 0 && <span>Fabric: +{formatNaira(item.fabricModifier)}</span>}
+                                  {item.styleModifier > 0 && <span>Style: +{formatNaira(item.styleModifier)}</span>}
+                                </div>
                               </div>
+
+                              {/* Swatches previews */}
+                              {(item.styleImgUrl || item.fabricImgUrl) && (
+                                <div className="flex gap-4 pt-1">
+                                  {item.styleImgUrl && (
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className="text-[9px] text-earth-400 font-semibold uppercase">Style</span>
+                                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-earth-200 bg-earth-50 shrink-0">
+                                        <img src={item.styleImgUrl} alt="" className="w-full h-full object-cover" />
+                                      </div>
+                                    </div>
+                                  )}
+                                  {item.fabricImgUrl && (
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className="text-[9px] text-earth-400 font-semibold uppercase">Fabric</span>
+                                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-earth-200 bg-earth-50 shrink-0">
+                                        <img src={item.fabricImgUrl} alt="" className="w-full h-full object-cover" />
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
 
                               {/* Measurements snapshot */}
                               {item.measurement && (
@@ -496,22 +534,10 @@ export default function MyOrders() {
                                 </div>
                               )}
 
-                              {item.notes && (
-                                <p className="text-xs text-earth-500 italic bg-earth-50/70 p-2.5 rounded-xl border border-earth-100">
-                                  💡 Special requests: "{item.notes}"
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="sm:text-right shrink-0">
-                              <p className="font-bold text-night-950 text-sm sm:text-base">{formatNaira(item.totalAmount)}</p>
-                              <span className="text-[10px] text-earth-400 block mt-0.5">Base: {formatNaira(item.basePrice)}</span>
-                              {item.fabricModifier > 0 && <span className="text-[10px] text-earth-400 block">Fabric: +{formatNaira(item.fabricModifier)}</span>}
-                              {item.styleModifier > 0 && <span className="text-[10px] text-earth-400 block">Style: +{formatNaira(item.styleModifier)}</span>}
-                            </div>
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
+                    </div>
                     </div>
 
                     {/* Logistics and Reference codes */}
