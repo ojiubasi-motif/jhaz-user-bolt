@@ -61,8 +61,8 @@ const WhatsappIcon = ({ size = 16, ...props }: { size?: number } & React.SVGProp
 );
 
 const socials = [
-  { icon: Instagram, href: 'https://instagram.com/Jhaz_imprint', label: 'Instagram' },
-  { icon: Facebook, href: 'https://facebook.com/jhaz imprint', label: 'Facebook' },
+  { icon: Instagram, href: 'https://instagram.com/Jhaz__imprint', label: 'Instagram' },
+  { icon: Facebook, href: 'https://www.facebook.com/share/1GQhUUfouL/', label: 'Facebook' },
   { icon: Twitter, href: '#', label: 'Twitter' },
   // { icon: Youtube, href: '#', label: 'YouTube' },
   { icon: TiktokIcon, href: 'https://www.tiktok.com/jhazmyn11', label: 'TikTok' },
@@ -138,7 +138,7 @@ export default function Footer() {
             <ul className="space-y-1">
               {footerLinks.about.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm hover:text-terra-400 transition-colors py-2 block">
+                  <a href={link.href} className="text-sm hover:text-terra-400 transition-colors py-2 block">
                     {link.label}
                   </a>
                 </li>
@@ -157,6 +157,8 @@ export default function Footer() {
               <a
                 key={s.label}
                 href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={s.label}
                 className="w-11 h-11 rounded-full bg-earth-900/50 flex items-center justify-center text-earth-500 hover:text-terra-400 hover:bg-earth-800/50 transition-all duration-300 min-w-[44px] min-h-[44px]"
               >
