@@ -472,11 +472,13 @@ export default function MyOrders() {
                       <div className="divide-y divide-earth-100">
                         {order.items.map((item, idx) => (
                           <div key={idx} className="py-4 first:pt-0 last:pb-0 flex gap-4 items-start border-b border-earth-100 last:border-0">
-                            {item.imgUrl && (
-                              <div className="w-16 h-16 rounded-xl overflow-hidden border border-earth-200 bg-earth-50 shrink-0">
-                                <img src={item.imgUrl} alt={item.productName} className="w-full h-full object-cover" />
-                              </div>
-                            )}
+                            <div className="w-16 h-16 rounded-xl overflow-hidden border border-earth-200 bg-earth-50 shrink-0">
+                              <img 
+                                src={item.imgUrl || 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=200&q=80'} 
+                                alt={item.productName || 'Garment'} 
+                                className="w-full h-full object-cover" 
+                              />
+                            </div>
                             <div className="flex-1 space-y-3 min-w-0">
                               <div>
                                 <div className="flex justify-between items-start gap-2">
