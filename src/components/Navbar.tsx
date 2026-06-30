@@ -9,7 +9,7 @@ import LastLoginBanner from './LastLoginBanner';
 const navLinks = [
   { label: 'Shop All', href: '/catalog' },
   { label: 'New Arrivals', href: '/#new-arrivals' },
-  { label: 'Customize', href: '/#customize' },
+  // { label: 'Customize', href: '/#customize' },
   { label: 'Collections', href: '/#categories' },
   { label: 'My Orders', href: '/my-orders' },
 ];
