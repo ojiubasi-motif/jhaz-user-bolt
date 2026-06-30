@@ -63,7 +63,7 @@ const WhatsappIcon = ({ size = 16, ...props }: { size?: number } & React.SVGProp
 const socials = [
   { icon: Instagram, href: 'https://instagram.com/Jhaz__imprint', label: 'Instagram' },
   { icon: Facebook, href: 'https://www.facebook.com/share/1GQhUUfouL/', label: 'Facebook' },
-  { icon: Twitter, href: '#', label: 'Twitter' },
+  // { icon: Twitter, href: '#', label: 'Twitter' },
   // { icon: Youtube, href: '#', label: 'YouTube' },
   { icon: TiktokIcon, href: 'https://www.tiktok.com/jhazmyn11', label: 'TikTok' },
   { icon: WhatsappIcon, href: 'https://wa.me/2347035834390', label: 'WhatsApp' },
