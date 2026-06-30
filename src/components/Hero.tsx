@@ -3,20 +3,9 @@ import { ArrowRight, Palette } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[650px] lg:h-[85vh] flex items-center overflow-hidden bg-earth-50">
-      {/* Background Hero Image - serves as full background below the navbar */}
-      <div className="absolute inset-0 z-0 pt-20 sm:pt-24">
-        <img
-          src="/images/hero-banner.jpg"
-          alt="African traditional fashion wear couple banner"
-          className="w-full h-full object-cover object-top"
-        />
-        {/* Subtle gradient overlay starting from the left and fading toward the middle */}
-        <div className="absolute inset-y-0 left-0 right-0 lg:right-auto lg:w-3/5 bg-gradient-to-t lg:bg-gradient-to-r from-earth-50 via-earth-50/75 to-transparent z-10" />
-      </div>
-
-      <div className="section-container relative z-10 pt-24 pb-16">
-        <div className="grid lg:grid-cols-12 gap-8 items-center">
+    <section className="relative min-h-[650px] lg:min-h-screen flex items-center overflow-hidden bg-earth-50 pt-20 sm:pt-24">
+      <div className="section-container relative z-10 py-12 lg:py-16">
+        <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
           {/* Left: Content without background card */}
           <div className="lg:col-span-6 space-y-8 animate-fade-up">
             <div className="space-y-4">
@@ -65,6 +54,17 @@ export default function Hero() {
                 <p className="font-display text-2xl sm:text-3xl font-bold text-night-950">100%</p>
                 <p className="text-xs sm:text-sm text-earth-600 font-medium">Handcrafted</p>
               </div>
+            </div>
+          </div>
+
+          {/* Right: Bounded 3:4 Aspect Image */}
+          <div className="lg:col-span-6 flex justify-center lg:justify-end animate-fade-up">
+            <div className="relative w-full max-w-md aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
+              <img
+                src="/images/hero-banner.jpg"
+                alt="African traditional fashion wear couple"
+                className="w-full h-full object-cover object-center"
+              />
             </div>
           </div>
         </div>
