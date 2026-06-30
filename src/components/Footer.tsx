@@ -61,11 +61,11 @@ const WhatsappIcon = ({ size = 16, ...props }: { size?: number } & React.SVGProp
 );
 
 const socials = [
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Facebook, href: '#', label: 'Facebook' },
+  { icon: Instagram, href: 'https://instagram.com/Jhaz_imprint', label: 'Instagram' },
+  { icon: Facebook, href: 'https://facebook.com/jhaz imprint', label: 'Facebook' },
   { icon: Twitter, href: '#', label: 'Twitter' },
   // { icon: Youtube, href: '#', label: 'YouTube' },
-  { icon: TiktokIcon, href: 'https://www.tiktok.com/@jhazimprints', label: 'TikTok' },
+  { icon: TiktokIcon, href: 'https://www.tiktok.com/jhazmyn11', label: 'TikTok' },
   { icon: WhatsappIcon, href: 'https://wa.me/2347035834390', label: 'WhatsApp' },
 ];
 
@@ -138,7 +138,7 @@ export default function Footer() {
             <ul className="space-y-1">
               {footerLinks.about.map((link) => (
                 <li key={link.label}>
-                  <a href={link.href} className="text-sm hover:text-terra-400 transition-colors py-2 block">
+                  <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm hover:text-terra-400 transition-colors py-2 block">
                     {link.label}
                   </a>
                 </li>
