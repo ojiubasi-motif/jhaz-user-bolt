@@ -579,84 +579,109 @@ function FilterSectionItem({
 
 function ProductCard({ product }: { product: Product }) {
   const [wishlist, setWishlist] = useState(false);
-
-  const badgeColor = product.shipping_badge === 'Ready to Ship'
-    ? 'bg-savanna-600/90 text-white'
-    : 'bg-night-950/80 text-earth-50';
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <div className="group flex flex-col rounded-xl overflow-hidden bg-white border border-earth-100 shadow-sm card-hover h-full">
-      {/* Image */}
-      <div className="relative aspect-square md:aspect-[4/3] overflow-hidden bg-earth-100">
-        <img
-          src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
-          alt={product.name}
-          className="img-cover transition-transform duration-700 group-hover:scale-105"
-          loading="lazy"
-        />
-
-        {/* Tag badge */}
-        {product.tag && (
-          <span className="absolute top-3 left-3 px-3 py-1 bg-terra-600 text-white text-[10px] font-bold tracking-wider uppercase rounded-full">
-            {product.tag}
-          </span>
-        )}
-
-        {/* Wishlist */}
-        <button
-          onClick={(e) => { e.preventDefault(); setWishlist(!wishlist); }}
-          className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-          aria-label="Toggle wishlist"
+    <>
+      <div className="group flex flex-col rounded-[24px] overflow-hidden bg-[#F5F2EB]/50 border border-[#E3DCD0] shadow-sm hover:shadow-md transition-all duration-300 h-full p-2">
+        {/* Image Container with rounded corners inside the padded card */}
+        <div 
+          onClick={() => setIsModalOpen(true)}
+          className="relative aspect-square md:aspect-[4/3] rounded-[18px] overflow-hidden bg-earth-100 cursor-zoom-in"
         >
-          <Heart size={16} className={wishlist ? 'fill-red-500 text-red-500' : 'text-night-800'} />
-        </button>
+          <img
+            src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
+            alt={product.name}
+            className="img-cover transition-transform duration-700 group-hover:scale-105 select-none"
+            loading="lazy"
+          />
 
-        {/* Shipping badge */}
-        <span className={`absolute bottom-3 left-3 px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase rounded-full backdrop-blur-sm ${badgeColor}`}>
-          {product.shipping_badge}
-        </span>
-
-        {/* Hover overlay action (desktop only) */}
-        <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-          <Link to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
-            Customize & Order
-            <ArrowRight size={14} />
-          </Link>
-        </div>
-      </div>
-
-      {/* Info — padded content section, inspired by apps/user ProductCard */}
-      <div className="flex flex-col flex-1 gap-2 p-4 justify-between">
-        <div>
-          <span className="text-[10px] text-earth-500 font-medium tracking-wider uppercase">
-            {product.category}
-            {product.fabric_type && product.fabric_type !== product.category && ` / ${product.fabric_type}`}
-          </span>
-          <h3 className="font-display text-base font-semibold text-night-950 group-hover:text-terra-700 transition-colors leading-snug mt-0.5 line-clamp-2">
-            {product.name}
-          </h3>
-          <div className="flex items-center gap-2 mt-2">
-            <span className="font-display text-lg font-bold text-[#B8860B] dark:text-[#D4AF37]">
-              ₦{product.price.toLocaleString('en-NG')}
-            </span>
-            {product.compare_at_price && (
-              <span className="text-sm text-earth-400 line-through">
-                ₦{product.compare_at_price.toLocaleString('en-NG')}
-              </span>
-            )}
+          {/* Translucent pill bar covering bottom overlay (Desktop: reveals on hover, Mobile: always visible) */}
+          <div className="absolute inset-x-0 bottom-3 flex justify-center z-20 px-2 transition-all duration-300 md:opacity-0 md:translate-y-2 md:group-hover:opacity-100 md:group-hover:translate-y-0">
+            <div 
+              onClick={(e) => e.stopPropagation()} 
+              className="flex items-center bg-black/65 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1.5 shadow-lg max-w-[95%] sm:max-w-max transition-all duration-300"
+            >
+              {/* Left: Customize Button */}
+              <Link
+                to={`/order?product=${product.id}`}
+                className="flex items-center gap-1.5 text-white hover:text-terra-300 px-2 py-1 transition-colors min-h-[28px]"
+              >
+                <Palette size={13} className="shrink-0" />
+                <span className="text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">Customize</span>
+              </Link>
+              
+              {/* Divider */}
+              <div className="h-4 w-px bg-white/20 mx-1 sm:mx-2" />
+              
+              {/* Right: Wishlist Button */}
+              <button
+                onClick={(e) => { e.preventDefault(); setWishlist(!wishlist); }}
+                className="flex items-center gap-1.5 text-white hover:text-red-400 px-2 py-1 transition-colors min-h-[28px]"
+              >
+                <Heart size={13} className={`shrink-0 ${wishlist ? 'fill-red-500 text-red-500' : ''}`} />
+                <span className="text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">Wishlist</span>
+              </button>
+            </div>
           </div>
         </div>
-        {/* Mobile action button (always visible on mobile/tablet, hidden on desktop) */}
-        <div className="mt-3 md:hidden">
-          <Link
-            to={`/order?product=${product.id}`}
-            className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2 min-h-[44px]"
-          >
-            Customize & Order
-            <ArrowRight size={14} />
-          </Link>
+
+        {/* Info - Padded details matching Framer layout */}
+        <div className="flex flex-col flex-1 p-3.5 pt-4 gap-2 justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              {product.tag ? (
+                <span className="px-2.5 py-0.5 bg-[#E8F5E9] text-[#2E7D32] text-[10px] font-bold rounded-[6px] uppercase tracking-wider">
+                  {product.tag}
+                </span>
+              ) : (
+                <span className="px-2.5 py-0.5 bg-earth-100 text-earth-700 text-[10px] font-bold rounded-[6px] uppercase tracking-wider">
+                  {product.shipping_badge}
+                </span>
+              )}
+              <span className="font-display text-sm sm:text-base font-bold text-night-950">
+                ₦{product.price.toLocaleString('en-NG')}
+              </span>
+            </div>
+
+            <div>
+              <h3 className="font-display text-sm sm:text-base font-bold text-night-950 group-hover:text-terra-700 transition-colors leading-snug">
+                {product.name}
+              </h3>
+              <p className="text-[11px] text-earth-500 leading-normal mt-1 line-clamp-2">
+                {product.description || "Handcrafted traditional wear personalized to your size and fabric choice."}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Lightbox Image Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in"
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl bg-transparent flex items-center justify-center" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
+              alt={product.name}
+              className="w-full h-full max-h-[85vh] object-contain rounded-xl select-none shadow-2xl"
+            />
+            {/* Close Button */}
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-black/60 hover:bg-black/80 text-white/90 hover:text-white flex items-center justify-center backdrop-blur-sm transition-all shadow-md border border-white/10"
+              aria-label="Close image modal"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
