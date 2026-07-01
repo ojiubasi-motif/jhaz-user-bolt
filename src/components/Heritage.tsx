@@ -38,8 +38,8 @@ export default function Heritage() {
             <div className="relative">
               <div className="aspect-[4/5] rounded-2xl overflow-hidden">
                 <img
-                  src="https://images.pexels.com/photos/6044191/pexels-photo-6044191.jpeg?auto=compress&cs=tinysrgb&w=800"
-                  alt="African artisan weaving fabric"
+                  src="/images/craftsmanship.webp"
+                  alt="Premium Ankara fabric craftsmanship details"
                   className="img-cover"
                 />
               </div>
