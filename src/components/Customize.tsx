@@ -51,7 +51,7 @@ export default function Customize() {
       </div>
 
       <div className="section-container relative z-10" ref={ref}>
-        <div className={`text-center mb-16 ${isVisible ? 'animate-fade-up' : 'opacity-0'}`}>
+        <div className={`text-center mb-16 p-5 sm:p-6 rounded-xl bg-night-950/80 backdrop-blur-md border border-earth-800/60 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:border-none ${isVisible ? 'animate-fade-up' : 'opacity-0'}`}>
           <span className="text-terra-400 font-body text-sm font-semibold tracking-widest uppercase">
             Your Design, Your Way
           </span>
@@ -69,7 +69,7 @@ export default function Customize() {
             {steps.map((step, i) => (
               <div
                 key={step.title}
-                className={`flex gap-6 ${isVisible ? 'animate-slide-in-left' : 'opacity-0'}`}
+                className={`flex gap-6 p-5 rounded-xl bg-night-950/80 backdrop-blur-md border border-earth-800/60 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:border-none ${isVisible ? 'animate-slide-in-left' : 'opacity-0'}`}
                 style={{ animationDelay: `${(i + 1) * 150}ms` }}
               >
                 <div className="shrink-0 w-14 h-14 rounded-xl bg-terra-600/20 border border-terra-500/30 flex items-center justify-center">
@@ -87,7 +87,7 @@ export default function Customize() {
             ))}
 
             {/* Fabric selector */}
-            <div className={`mt-10 pt-8 border-t border-earth-800/80 ${isVisible ? 'animate-fade-up delay-400' : 'opacity-0'}`}>
+            <div className={`mt-10 p-5 rounded-xl bg-night-950/80 backdrop-blur-md border border-earth-800/60 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:border-none lg:border-t lg:border-earth-800/80 lg:pt-8 ${isVisible ? 'animate-fade-up delay-400' : 'opacity-0'}`}>
               <p className="text-xs text-earth-500 font-semibold tracking-widest uppercase mb-4">
                 Pick Your Fabric
               </p>
