@@ -9,6 +9,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchProducts, fetchProductByIdOrSlug } from '../store/slices/catalogSlice';
 import { fetchApi } from '../lib/apiClient';
+import CustomDropdown from '../components/CustomDropdown';
 
 // ═══════════════════════════════════════════════════════
 // Types
@@ -1424,17 +1425,16 @@ function StepMeasurements({
           ) : savedProfiles.length > 0 && !isCreatingNew ? (
             <div>
               <label className="block text-xs font-semibold text-night-950 mb-1.5">Select Profile</label>
-              <select
+              <CustomDropdown
                 value={selectedProfileId || ''}
-                onChange={(e) => handleProfileChange(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-earth-200 rounded-xl text-base md:text-sm font-body text-night-950 focus:outline-none focus:border-terra-500 focus:ring-1 focus:ring-terra-500 transition-all"
-              >
-                {savedProfiles.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.profileName} {p.isDefault ? '(Default)' : ''}
-                  </option>
-                ))}
-              </select>
+                onChange={handleProfileChange}
+                options={savedProfiles.map((p) => ({
+                  value: p.id,
+                  label: `${p.profileName} ${p.isDefault ? '(Default)' : ''}`
+                }))}
+                placeholder="Choose profile"
+                showDotIfNotEmpty={true}
+              />
             </div>
           ) : isCreatingNew ? (
             <div className="space-y-3">
@@ -1722,15 +1722,13 @@ function StepDelivery({
         <h3 className="font-display text-base font-semibold text-night-950">Delivery Address</h3>
         <div>
           <label className="block text-sm font-semibold text-night-950 mb-1.5">Country</label>
-          <select
+          <CustomDropdown
             value={form.country}
-            onChange={(e) => handleChange('country', e.target.value)}
-            className={inputCls}
-          >
-            {SUPPORTED_COUNTRIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+            onChange={(val) => handleChange('country', val)}
+            options={SUPPORTED_COUNTRIES.map((c) => ({ value: c, label: c }))}
+            placeholder="Select country"
+            showDotIfNotEmpty={true}
+          />
         </div>
         <div>
           <label className="block text-sm font-semibold text-night-950 mb-1.5">Street Address</label>
@@ -1743,16 +1741,13 @@ function StepDelivery({
           </div>
           <div>
             <label className="block text-sm font-semibold text-night-950 mb-1.5">State</label>
-            <select
+            <CustomDropdown
               value={form.state}
-              onChange={(e) => handleChange('state', e.target.value)}
-              className={inputCls}
-            >
-              <option value="">Select state</option>
-              {NIGERIAN_STATES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+              onChange={(val) => handleChange('state', val)}
+              options={NIGERIAN_STATES.map((r) => ({ value: r, label: r }))}
+              placeholder="Select state"
+              showDotIfNotEmpty={true}
+            />
           </div>
         </div>
       </div>
