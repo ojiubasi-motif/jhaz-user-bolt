@@ -85,13 +85,6 @@ export default function Bestsellers() {
                           </span>
                         </div>
                       )}
-                      {/* Quick action overlay (desktop only) */}
-                      <div className="hidden md:block absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <RouterLink to={`/order?product=${product.id}`} className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2">
-                          Customize & Order
-                          <ArrowRight size={14} />
-                        </RouterLink>
-                      </div>
                     </div>
 
                     <div className="flex flex-col flex-1 gap-2 p-4 justify-between">
@@ -122,8 +115,8 @@ export default function Bestsellers() {
                           )}
                         </div>
                       </div>
-                      {/* Mobile action button (always visible on mobile/tablet, hidden on desktop) */}
-                      <div className="mt-3 md:hidden">
+                      {/* Action button below the price */}
+                      <div className="mt-3 w-full">
                         <RouterLink
                           to={`/order?product=${product.id}`}
                           className="w-full btn-primary text-xs py-3 rounded-lg flex items-center justify-center gap-2 min-h-[44px]"
