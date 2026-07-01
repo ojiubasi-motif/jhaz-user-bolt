@@ -583,51 +583,22 @@ function ProductCard({ product }: { product: Product }) {
 
   return (
     <>
-      <div className="group flex flex-col rounded-[24px] overflow-hidden bg-[#F5F2EB]/50 border border-[#E3DCD0] shadow-sm hover:shadow-md transition-all duration-300 h-full p-2">
-        {/* Image Container with rounded corners inside the padded card */}
+      <div className="group flex flex-col rounded-[24px] overflow-hidden bg-[#F5F2EB]/50 border border-[#E3DCD0] shadow-sm hover:shadow-md transition-all duration-300 h-full">
+        {/* Image Container flush with top edges, no bottom corner roundness */}
         <div 
           onClick={() => setIsModalOpen(true)}
-          className="relative aspect-square md:aspect-[4/3] rounded-[18px] overflow-hidden bg-earth-100 cursor-zoom-in"
+          className="relative w-full aspect-[3/4] overflow-hidden bg-earth-100 cursor-zoom-in"
         >
           <img
             src={product.image_url || 'https://images.pexels.com/photos/7691105/pexels-photo-7691105.jpeg?auto=compress&cs=tinysrgb&w=600'}
             alt={product.name}
-            className="img-cover transition-transform duration-700 group-hover:scale-105 select-none"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 select-none"
             loading="lazy"
           />
-
-          {/* Translucent pill bar covering bottom overlay (Desktop: reveals on hover, Mobile: always visible) */}
-          <div className="absolute inset-x-0 bottom-3 flex justify-center z-20 px-2 transition-all duration-300 md:opacity-0 md:translate-y-2 md:group-hover:opacity-100 md:group-hover:translate-y-0">
-            <div 
-              onClick={(e) => e.stopPropagation()} 
-              className="flex items-center bg-black/65 backdrop-blur-md border border-white/10 rounded-full px-2.5 py-1.5 shadow-lg max-w-[95%] sm:max-w-max transition-all duration-300"
-            >
-              {/* Left: Customize Button */}
-              <Link
-                to={`/order?product=${product.id}`}
-                className="flex items-center gap-1.5 text-white hover:text-terra-300 px-2 py-1 transition-colors min-h-[28px]"
-              >
-                <Palette size={13} className="shrink-0" />
-                <span className="text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">Customize</span>
-              </Link>
-              
-              {/* Divider */}
-              <div className="h-4 w-px bg-white/20 mx-1 sm:mx-2" />
-              
-              {/* Right: Wishlist Button */}
-              <button
-                onClick={(e) => { e.preventDefault(); setWishlist(!wishlist); }}
-                className="flex items-center gap-1.5 text-white hover:text-red-400 px-2 py-1 transition-colors min-h-[28px]"
-              >
-                <Heart size={13} className={`shrink-0 ${wishlist ? 'fill-red-500 text-red-500' : ''}`} />
-                <span className="text-[10px] sm:text-xs font-semibold tracking-wide whitespace-nowrap">Wishlist</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Info - Padded details matching Framer layout */}
-        <div className="flex flex-col flex-1 p-3.5 pt-4 gap-2 justify-between">
+        <div className="flex flex-col flex-1 p-4 gap-2 justify-between">
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               {product.tag ? (
@@ -653,6 +624,27 @@ function ProductCard({ product }: { product: Product }) {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Base buttons - statically positioned at the bottom, no hover reveal transitions */}
+        <div className="flex items-center border-t border-[#E3DCD0] bg-[#FAF8F5] divide-x divide-[#E3DCD0] mt-auto">
+          {/* Left: Customize Button */}
+          <Link
+            to={`/order?product=${product.id}`}
+            className="flex-1 flex items-center justify-center gap-1.5 py-3 text-night-950 hover:text-terra-700 transition-colors text-xs font-bold min-h-[44px]"
+          >
+            <Palette size={14} />
+            Customize & Order
+          </Link>
+          
+          {/* Right: Wishlist Button */}
+          <button
+            onClick={(e) => { e.preventDefault(); setWishlist(!wishlist); }}
+            className="px-4 py-3 text-night-950 hover:text-red-500 transition-colors flex items-center justify-center min-h-[44px]"
+            aria-label="Toggle wishlist"
+          >
+            <Heart size={14} className={wishlist ? 'fill-red-500 text-red-500' : ''} />
+          </button>
         </div>
       </div>
 
