@@ -110,8 +110,8 @@ export default function Customize() {
           <div className={`${isVisible ? 'animate-slide-in-right' : 'opacity-0'}`}>
             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
               <img
-                src="https://images.pexels.com/photos/5710098/pexels-photo-5710098.jpeg?auto=compress&cs=tinysrgb&w=800"
-                alt="Custom African fashion"
+                src="/images/how-it-works.jpg"
+                alt="Tailor cutting custom fabric"
                 className="img-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-night-950/60 via-transparent to-transparent" />
