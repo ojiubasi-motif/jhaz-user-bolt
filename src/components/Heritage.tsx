@@ -65,7 +65,7 @@ export default function Heritage() {
 
           {/* Right: Content (On mobile, this is overlaying the background image) */}
           <div className="space-y-8 relative z-10">
-            <div className={isVisible ? 'animate-slide-in-right' : 'opacity-0'}>
+            <div className={`${isVisible ? 'animate-slide-in-right' : 'opacity-0'} p-5 sm:p-6 rounded-xl bg-night-950/80 backdrop-blur-md border border-earth-800/60 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:border-none`}>
               <span className="text-terra-400 lg:text-terra-600 font-body text-sm font-semibold tracking-widest uppercase">
                 Our Commitment
               </span>
@@ -83,7 +83,7 @@ export default function Heritage() {
               {values.map((v, i) => (
                 <div
                   key={v.label}
-                  className={`flex gap-5 ${isVisible ? 'animate-slide-in-right' : 'opacity-0'}`}
+                  className={`flex gap-5 p-5 rounded-xl bg-night-950/80 backdrop-blur-md border border-earth-800/60 lg:bg-transparent lg:backdrop-blur-none lg:p-0 lg:border-none ${isVisible ? 'animate-slide-in-right' : 'opacity-0'}`}
                   style={{ animationDelay: `${(i + 1) * 150}ms` }}
                 >
                   <div className="shrink-0 w-14 h-14 rounded-xl bg-terra-900/30 lg:bg-terra-100 flex items-center justify-center border border-terra-500/20 lg:border-none">
