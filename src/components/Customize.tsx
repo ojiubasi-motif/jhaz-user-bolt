@@ -40,6 +40,16 @@ export default function Customize() {
         }} />
       </div>
 
+      {/* Mobile background image & gradient overlay (matches Hero.tsx style) */}
+      <div className="absolute inset-0 lg:hidden z-0">
+        <img
+          src="/images/how-it-works.jpg"
+          alt="Tailor cutting custom fabric background"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-night-950/96 via-night-950/80 to-night-950/95" />
+      </div>
+
       <div className="section-container relative z-10" ref={ref}>
         <div className={`text-center mb-16 ${isVisible ? 'animate-fade-up' : 'opacity-0'}`}>
           <span className="text-terra-400 font-body text-sm font-semibold tracking-widest uppercase">
@@ -54,8 +64,8 @@ export default function Customize() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left: Steps */}
-          <div className="space-y-8">
+          {/* Left: Steps & Fabric Controls */}
+          <div className="space-y-8 relative z-10">
             {steps.map((step, i) => (
               <div
                 key={step.title}
@@ -77,7 +87,7 @@ export default function Customize() {
             ))}
 
             {/* Fabric selector */}
-            <div className={`mt-10 pt-8 border-t border-earth-800 ${isVisible ? 'animate-fade-up delay-400' : 'opacity-0'}`}>
+            <div className={`mt-10 pt-8 border-t border-earth-800/80 ${isVisible ? 'animate-fade-up delay-400' : 'opacity-0'}`}>
               <p className="text-xs text-earth-500 font-semibold tracking-widest uppercase mb-4">
                 Pick Your Fabric
               </p>
@@ -88,8 +98,8 @@ export default function Customize() {
                     onClick={() => setSelectedFabric(i)}
                     className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
                       selectedFabric === i
-                        ? 'bg-terra-600/20 border border-terra-500/50'
-                        : 'bg-earth-900/50 border border-earth-800 hover:border-earth-600'
+                        ? 'bg-terra-600/25 border border-terra-500/60 shadow-lg shadow-terra-950/20'
+                        : 'bg-earth-900/60 border border-earth-800 hover:border-earth-600'
                     }`}
                   >
                     <span className={`w-4 h-4 rounded-full ${fabric.color}`} />
@@ -104,21 +114,46 @@ export default function Customize() {
                 ))}
               </div>
             </div>
+
+            {/* Mobile-only interactive card displaying live choices over the background image */}
+            <div className="lg:hidden mt-8 animate-fade-up">
+              <div className="bg-night-950/85 backdrop-blur-md rounded-xl p-5 border border-earth-800/60">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="font-display text-base font-semibold text-earth-100">
+                      Custom {fabrics[selectedFabric].name} Dress
+                    </p>
+                    <p className="text-xs text-earth-400 mt-0.5">
+                      {fabrics[selectedFabric].desc}
+                    </p>
+                  </div>
+                  <span className="font-display text-xl font-bold text-terra-400">$135</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-terra-600/20 text-terra-400 text-[10px] font-medium rounded">
+                    Made to Order
+                  </span>
+                  <span className="px-2 py-0.5 bg-savanna-600/20 text-savanna-400 text-[10px] font-medium rounded">
+                    7-10 Days
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Right: Interactive Preview */}
-          <div className={`${isVisible ? 'animate-slide-in-right' : 'opacity-0'}`}>
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+          {/* Right: Interactive Preview (Desktop only) */}
+          <div className={`hidden lg:block ${isVisible ? 'animate-slide-in-right' : 'opacity-0'}`}>
+            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden border border-earth-800/40">
               <img
                 src="/images/how-it-works.jpg"
                 alt="Tailor cutting custom fabric"
                 className="img-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-night-950/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-night-950/70 via-transparent to-transparent" />
 
               {/* Overlay info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-8">
-                <div className="bg-night-950/80 backdrop-blur-md rounded-xl p-4 sm:p-6 border border-earth-800/50">
+              <div className="absolute bottom-0 left-0 right-0 p-8">
+                <div className="bg-night-950/80 backdrop-blur-md rounded-xl p-6 border border-earth-800/50">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="font-display text-lg font-semibold text-earth-100">
