@@ -4,10 +4,21 @@ import { ArrowRight, Palette } from 'lucide-react';
 export default function Hero() {
   return (
     <section className="relative min-h-[650px] lg:min-h-screen flex items-center overflow-hidden bg-earth-50 pt-20 sm:pt-24">
-      <div className="section-container relative z-10 py-12 lg:py-16">
+      {/* Background Image only visible on mobile/tablet (below lg) */}
+      <div className="absolute inset-0 z-0 lg:hidden">
+        <img
+          src="/images/hero-banner.jpg"
+          alt="African traditional fashion wear couple background"
+          className="w-full h-full object-cover object-top"
+        />
+        {/* Mild gradient overlay starting from the top-left */}
+        <div className="absolute inset-0 bg-gradient-to-br from-earth-50/95 via-earth-50/65 to-transparent z-10" />
+      </div>
+
+      <div className="section-container relative z-10 py-12 lg:py-16 w-full">
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-          {/* Left: Content without background card */}
-          <div className="lg:col-span-6 space-y-8 animate-fade-up">
+          {/* Left: Content - transparent background, text positioned top-left, scaled dynamically */}
+          <div className="lg:col-span-6 space-y-8 animate-fade-up text-left max-w-xl lg:max-w-none">
             <div className="space-y-4">
               <div>
                 <span className="inline-flex items-center gap-2 px-4 py-2 bg-terra-100 text-terra-800 border border-terra-200/50 font-body text-xs font-semibold tracking-widest uppercase rounded-full">
@@ -16,7 +27,7 @@ export default function Hero() {
                 </span>
               </div>
 
-              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black leading-[1.15] tracking-tight text-night-950">
+              <h1 className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-[1.15] tracking-tight text-night-950">
                 Rooted in <br />
                 <span className="text-gradient italic">Heritage.</span> <br />
                 Crafted for <br />
@@ -57,8 +68,8 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right: Bounded 3:4 Aspect Image */}
-          <div className="lg:col-span-6 flex justify-center lg:justify-end animate-fade-up">
+          {/* Right: Bounded 3:4 Aspect Image - only visible on desktop (lg and up) */}
+          <div className="hidden lg:col-span-6 lg:flex justify-center lg:justify-end animate-fade-up">
             <div className="relative w-full max-w-md aspect-[3/4] rounded-3xl overflow-hidden shadow-2xl border-4 border-white bg-white">
               <img
                 src="/images/hero-banner.jpg"
