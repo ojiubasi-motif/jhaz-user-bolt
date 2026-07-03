@@ -3,7 +3,7 @@ import { ArrowRight, Palette } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[650px] lg:min-h-screen flex items-center overflow-hidden bg-earth-50 pt-20 sm:pt-24">
+    <section id="welcome" className="relative min-h-[650px] lg:min-h-screen flex items-center overflow-hidden bg-earth-50 pt-20 sm:pt-24">
       {/* Background Image only visible on mobile/tablet (below lg) */}
       <div className="absolute inset-0 z-0 lg:hidden">
         <img

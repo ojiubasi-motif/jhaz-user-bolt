@@ -68,6 +68,18 @@ export default function Navbar() {
 
   const isHome = location.pathname === '/';
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (isHome) {
+      e.preventDefault();
+      const welcome = document.getElementById('welcome');
+      if (welcome) {
+        welcome.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   const CartBadge = () =>
     cartCount > 0 ? (
       <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-terra-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -88,7 +100,7 @@ export default function Navbar() {
         <div className="section-container">
           <div className="flex items-center justify-between h-20 sm:h-24">
             {/* Logo */}
-            <Link to="/" className="flex items-center h-full group">
+            <Link to="/#welcome" onClick={handleLogoClick} className="flex items-center h-full group">
               <img 
                 src={logo} 
                 alt="Jhaz-imprints Logo" 

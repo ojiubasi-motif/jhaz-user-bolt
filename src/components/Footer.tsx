@@ -1,5 +1,5 @@
-import { href, Link } from 'react-router-dom';
-import { Instagram, Facebook, Twitter, Youtube, MapPin, Mail, Phone } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Instagram, Facebook, MapPin, Mail, Phone } from 'lucide-react';
 import logo from '../assets/logo.png';
 
 const footerLinks = {
@@ -70,13 +70,28 @@ const socials = [
 ];
 
 export default function Footer() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (isHome) {
+      e.preventDefault();
+      const welcome = document.getElementById('welcome');
+      if (welcome) {
+        welcome.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <footer className="bg-night-950 text-earth-400 border-t border-earth-800">
       <div className="section-container py-16">
         <div className="grid grid-cols-1 text-center sm:text-left sm:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand */}
           <div className="lg:col-span-2 space-y-5 flex flex-col items-center sm:items-start">
-            <Link to="/" className="inline-block group">
+            <Link to="/#welcome" onClick={handleLogoClick} className="inline-block group">
               <img 
                 src={logo} 
                 alt="Jhaz-imprints Logo" 
