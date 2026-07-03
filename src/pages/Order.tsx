@@ -447,8 +447,8 @@ export default function Order() {
     setPaymentReference(ref);
     // Clear cart on successful payment
     setCartItems([]);
-    goToStep(8);
-  }, [goToStep, cartItems, orderData]);
+    navigate('/my-orders', { replace: true });
+  }, [navigate, cartItems, orderData]);
 
   const payOrder = async (orderInfo: any) => {
     const PaystackPop = (window as any).PaystackPop;
